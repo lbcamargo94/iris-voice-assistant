@@ -1,5 +1,9 @@
 # Licenças e distribuição de modelos
 
+## Licença do projeto
+
+O código do Iris Voice Assistant é MIT (`LICENSE`, decidido em 2026-11-09). A licença cobre apenas o código deste repositório; componentes de terceiros mantêm suas licenças. Componentes copyleft (ex.: sucessor do Piper, GPL-3.0) devem ser usados como processo separado e não incorporados ao código MIT.
+
 ## Regra
 
 Nenhum modelo, voz, pacote ou runtime será incluído em distribuição comercial antes de revisão da licença específica da versão e do artefato utilizado.
@@ -38,6 +42,36 @@ Licenças abaixo são a informação conhecida no planejamento e **devem ser con
 | AMI Meeting Corpus (testes) | CC-BY 4.0: atribuição; uso apenas como dado de teste |
 
 A licença do runtime não determina automaticamente a licença dos pesos ou dos pacotes de idioma. Verificar cada artefato separadamente.
+
+## Inventário em uso (POC-001A)
+
+Revisado em 2026-11-09 a partir dos metadados publicados (PyPI, Hugging Face, página do corpus). Revisão técnica, não jurídica. Os SHA-256 dos modelos ficam registrados em cada relatório em `benchmarks/results/`.
+
+### Dependências Python
+
+| Pacote | Versão (uv.lock) | Grupo | Função | Licença | Observação |
+| --- | --- | --- | --- | --- | --- |
+| numpy | 2.x | runtime | Buffers de áudio | BSD-3-Clause | Mantido ativamente |
+| faster-whisper | 1.2.1 | bench | STT | MIT | Mantido pela SYSTRAN |
+| ctranslate2 | 4.8.5 | bench (dep.) | Inferência Whisper/Opus-MT | MIT | Wheel Windows inclui libiomp5 (Intel, redistribuível) |
+| nvidia-cublas-cu12 / nvidia-cudnn-cu12 / nvidia-cuda-nvrtc-cu12 | 12.9 / 9.28 / 12.9 | bench | DLLs CUDA para CTranslate2 sem CUDA Toolkit global | NVIDIA EULA (redistribuição permitida sob os termos) | ~1,3 GB; revisar termos antes de empacotar |
+| av, onnxruntime, tokenizers, huggingface-hub | ver uv.lock | bench (dep. de faster-whisper) | Decodificação, VAD Silero, tokenização, download | BSD/LGPL (av usa FFmpeg LGPL), MIT, Apache-2.0, Apache-2.0 | `av` não é usado: o áudio entra como array |
+| psutil | 7.x | bench | Amostragem de CPU/RAM | BSD-3-Clause | |
+| nvidia-ml-py | 13.x | bench | Amostragem de VRAM (NVML) | BSD-3-Clause | |
+
+`huggingface-hub` é usado somente para downloads explícitos (`--allow-download`), com `HF_HUB_DISABLE_TELEMETRY=1`.
+
+### Modelos e dados
+
+| Artefato | Origem | Revisão | Tamanho | Licença |
+| --- | --- | --- | --- | --- |
+| faster-whisper small.en | huggingface.co/Systran/faster-whisper-small.en | d1d751a5f8 | 464 MiB | MIT (pesos Whisper, OpenAI) |
+| faster-whisper medium.en | huggingface.co/Systran/faster-whisper-medium.en | a29b04bd15 | 1460 MiB | MIT |
+| faster-distil-whisper large-v3 | huggingface.co/Systran/faster-distil-whisper-large-v3 | c3058b4752 | 1446 MiB | MIT (distil-whisper, Hugging Face) |
+| faster-whisper large-v3-turbo | huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo (redireciona para dropbox-dash/…) | 0a363e9161 | 1547 MiB | MIT |
+| AMI Meeting Corpus: IS1009a, ES2004a (Mix-Headset) + anotações manuais 1.6.2 | groups.inf.ed.ac.uk/ami | ver `benchmarks/corpus/ami.manifest.json` | ~83 MB | CC BY 4.0 — atribuição obrigatória |
+
+Atribuição AMI: *Carletta, J. et al. (2005). The AMI Meeting Corpus: A Pre-Announcement. MLMI 2005.* Dados usados somente como material de teste; não redistribuídos neste repositório.
 
 ## Distribuição
 

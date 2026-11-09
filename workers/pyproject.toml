@@ -4,11 +4,21 @@ version = "0.1.0"
 description = "Local AI workers (STT, translation, LLM adapter, TTS) for Iris Voice Assistant"
 requires-python = "==3.12.*"
 # AI dependencies (faster-whisper, ctranslate2, piper, ...) are added and pinned during POC-001A,
-# each justified per AGENTS.md (function, license, maintenance, distribution impact).
-dependencies = []
+# each justified per AGENTS.md (function, license, maintenance, distribution impact; docs/LICENSES.md).
+dependencies = [
+    "numpy>=2.0,<3",  # audio buffers (BSD-3-Clause)
+]
 
 [dependency-groups]
 dev = ["pytest>=8.3,<9"]
+# POC-001A benchmark only (not installed by default/CI). Justification in docs/LICENSES.md.
+bench = [
+    "faster-whisper>=1.1,<2",        # STT (MIT) on CTranslate2 (MIT)
+    "nvidia-cublas-cu12>=12.4,<13",  # CUDA 12 cuBLAS DLLs for CTranslate2 (NVIDIA EULA)
+    "nvidia-cudnn-cu12>=9.1,<10",    # cuDNN 9 DLLs for CTranslate2 (NVIDIA EULA)
+    "psutil>=6.0,<8",                # CPU/RAM sampling (BSD-3-Clause)
+    "nvidia-ml-py>=12.0",            # VRAM sampling via NVML (BSD-3-Clause)
+]
 
 [build-system]
 requires = ["hatchling>=1.25,<2"]
@@ -16,6 +26,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/iris_workers"]
+
+[tool.uv]
+# P0 targets Windows x64; resolve only versions that ship win_amd64 wheels.
+required-environments = ["sys_platform == 'win32' and platform_machine == 'AMD64'"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

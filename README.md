@@ -86,3 +86,7 @@ As versões exatas de pacotes e modelos deverão ser fixadas após a POC e regis
 ## Como contribuir
 
 Leia `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/IRIS-*.md` quando trabalhar na agente e `docs/POC-001.md` antes de implementar. Toda alteração arquitetural relevante deve ser registrada em um ADR.
+
+## Licença
+
+O código deste repositório é distribuído sob a [licença MIT](LICENSE). Modelos, vozes, runtimes e conjuntos de dados de terceiros (Whisper, Opus-MT, Piper, CUDA/cuDNN, AMI etc.) **não** são cobertos por ela: cada um mantém a própria licença, listada em [docs/LICENSES.md](docs/LICENSES.md), e não é redistribuído neste repositório.
