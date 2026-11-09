@@ -1,0 +1,38 @@
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+TestResults/
+artifacts/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# uv cache kept on the same drive as the repo (see workers/README.md)
+/.cache/
+
+# Models and local data (anchored to the repo root so folders such as src/**/Data/ are not ignored)
+/models/
+/data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+
+# Temporary audio produced by diagnostics/benchmarks
+/tmp/
+*.wav
+
+# IDE / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db

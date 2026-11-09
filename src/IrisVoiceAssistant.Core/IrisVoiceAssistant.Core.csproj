@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>IrisVoiceAssistant.Core</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Core must stay platform-independent: no OS-specific, infrastructure or AI-runtime references (AGENTS.md §3). -->
+
+</Project>

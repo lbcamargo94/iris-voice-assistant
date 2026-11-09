@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/IrisVoiceAssistant.Core/IrisVoiceAssistant.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/IrisVoiceAssistant.Core.Tests/IrisVoiceAssistant.Core.Tests.csproj" />
+  </Folder>
+</Solution>

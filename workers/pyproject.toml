@@ -1,0 +1,21 @@
+[project]
+name = "iris-workers"
+version = "0.1.0"
+description = "Local AI workers (STT, translation, LLM adapter, TTS) for Iris Voice Assistant"
+requires-python = "==3.12.*"
+# AI dependencies (faster-whisper, ctranslate2, piper, ...) are added and pinned during POC-001A,
+# each justified per AGENTS.md (function, license, maintenance, distribution impact).
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8.3,<9"]
+
+[build-system]
+requires = ["hatchling>=1.25,<2"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/iris_workers"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

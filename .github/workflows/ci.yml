@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dotnet:
+    name: .NET build and test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore IrisVoiceAssistant.slnx
+
+      - name: Build
+        run: dotnet build IrisVoiceAssistant.slnx --no-restore --configuration Release
+
+      - name: Test
+        run: dotnet test IrisVoiceAssistant.slnx --no-build --configuration Release
+
+  workers:
+    name: Python workers tests
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: workers
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Sync (locked)
+        run: uv sync --locked
+
+      - name: Test
+        run: uv run pytest -q

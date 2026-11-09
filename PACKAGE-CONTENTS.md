@@ -1,0 +1,28 @@
+# Conteúdo do pacote — Iris Voice Assistant v3.3
+
+- `README.md` — visão geral e princípios do projeto.
+- `AGENTS.md` — instruções para agentes de programação.
+- `CHANGELOG.md` — alterações desta revisão.
+- `docs/REQUIREMENTS.md` — requisitos funcionais e não funcionais.
+- `docs/ARCHITECTURE.md` — arquitetura da aplicação e convenções .NET.
+- `docs/AUDIO-ENGINE.md` — captura, processamento e reprodução de áudio.
+- `docs/AI-RUNTIME.md` — runtime e workers locais de IA.
+- `docs/MODEL-MANAGER.md` — gerenciamento de modelos.
+- `docs/DATABASE.md` — persistência e modelo de dados.
+- `docs/SECURITY.md` — segurança e privacidade.
+- `docs/LICENSES.md` — licenças e dependências.
+- `docs/TEST-STRATEGY.md` — estratégia de testes.
+- `docs/POC-001.md` — plano da prova de conceito.
+- `docs/ROADMAP.md` — roadmap.
+- `docs/IRIS-IDENTITY.md` — identidade e missão da Iris.
+- `docs/IRIS-BEHAVIOR.md` — comportamento e proatividade.
+- `docs/IRIS-ARCHITECTURE.md` — arquitetura interna da assistente.
+- `docs/IRIS-CONTEXT.md` — contexto e memória.
+- `docs/IRIS-INTEGRATION.md` — integração com módulos.
+- `docs/IRIS-UX.md` — experiência de uso.
+- `docs/IRIS-TESTS.md` — testes específicos da Iris.
+- `docs/adr/` — decisões arquiteturais ADR-001 a ADR-013.
+- `scripts/` — scripts de setup e verificação de ambiente.
+- `src/` — projetos .NET (criados gradualmente conforme o POC-001).
+- `tests/` — testes .NET.
+- `workers/` — workers Python de IA (ambiente `uv`).
