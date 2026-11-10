@@ -75,9 +75,29 @@ Leitura:
 - A v2 elimina a perda silenciosa sem custo relevante de WER (+0,013 em IS1009a, −0,002 em ES2004a).
 - **Blocos de 0,5 s atingem a meta de 1ª exibição do RNF-015 também no p95** (≤ 1,5 s) e reduzem a confirmação pela metade, ao custo de ~+0,03 de WER e do dobro de GPU (RTF ~0,4 por fluxo; ~0,8 estimado com dois fluxos — apertado). Decisão de produto: ver pendências.
 
+### Cadência híbrida e dois fluxos simultâneos → padrão escolhido (2026-11-10)
+
+Modo híbrido (`agreement_interval_seconds`): passadas a cada 0,5 s só atualizam o texto provisório; a confirmação compara hipóteses separadas por ≥ 1 s de áudio novo. `--concurrent` processa as duas reuniões ao mesmo tempo no mesmo modelo, simulando sistema + microfone num único worker (pior caso: fala contínua nos dois). GPU livre; uma primeira rodada com um jogo aberto foi **descartada** (latências de dezenas de segundos). Resultados em `results/stt-policy-v3/`; large-v3-turbo int8_float16, beam 5 na confirmação.
+
+| Fluxos | Configuração | WER IS / ES | 1ª exibição p50 / p95 (s) | Confirmação p50 / p95 (s) | RTF somado |
+| --- | --- | --- | --- | --- | --- |
+| 1 | bloco 1 s | 0.185 / 0.176 | 0.81–0.82 / 1.67–1.81 | 1.89–1.90 / 3.11–4.02 | 0.18–0.24 |
+| 1 | bloco 0,5 s | 0.211 / 0.207 | 0.53 / 1.18–1.47 | 1.08 / 2.07–2.61 | 0.35–0.45 |
+| 1 | híbrido (exibição beam 5) | 0.185 / 0.176 | 0.52–0.54 / 1.27–1.37 | 1.88 / 3.10–4.03 | 0.34–0.44 |
+| 1 | híbrido (exibição beam 1) | 0.185 / 0.176 | 0.49–0.51 / 1.28–1.35 | 1.88–1.90 / 3.10–4.01 | 0.32–0.41 |
+| 1 | **híbrido beam 1 + pular se atrasado** | 0.185 / 0.176 | **0.48–0.50 / 1.26–1.32** | 1.86 / 3.09–4.01 | 0.30–0.39 |
+| 2 | bloco 1 s | 0.185 / 0.176 | 0.79–1.07 / 1.67–2.47 | 1.86–2.13 / 3.11–4.40 | 0.40 |
+| 2 | bloco 0,5 s | 0.216 / 0.207 | 0.78–1.45 / 5.06–5.42 | 1.43–2.15 / 5.64–5.97 | 0.73 |
+| 2 | híbrido beam 1 | 0.185 / 0.176 | 0.72–1.25 / 3.19–3.59 | 2.09–2.65 / 4.65–5.25 | 0.70 |
+| 2 | **híbrido beam 1 + pular se atrasado** | 0.185 / 0.176 | **0.51–0.82 / 1.25–1.76** | **1.86–2.11 / 3.09–4.01** | 0.64 |
+
+Zero cortes forçados e zero palavras perdidas em todas as configurações. "Pular se atrasado" = passadas de exibição puladas quando o worker está > 0,25 s atrás do áudio (1 fluxo: 2 de 600; 2 fluxos: 87 de 1200); a saída confirmada é idêntica.
+
+**Padrão escolhido (ADR-008, refinamento):** híbrido 0,5 s / 1 s, exibição com beam 1 e pulada quando atrasada, confirmação beam 5. Atende a meta de 1ª exibição do RNF-015 também no p95 com dois fluxos no pior caso.
+
 ### Pendências do passo 2
 
-- Escolher o bloco padrão (1 s × 0,5 s) e medir **dois fluxos simultâneos** antes de fixar.
-- Alternativa a avaliar: parciais a cada 0,5 s, mas confirmação só com hipóteses de ≥ 1 s de áudio novo (latência de exibição do 0,5 s com a precisão do 1 s).
 - Parakeet via sherpa-onnx (concorrente, ADR-008) ainda não medido.
 - Reuniões completas e mais reuniões AMI; normalização de números.
+- Resource Manager: detectar atraso crescente quando outro programa usa a GPU e avisar o usuário.
+- Confirmação p95 de 3–4 s + tradução precisa caber na meta de 4 s do RNF-015: medir no POC-001D.

@@ -80,67 +80,104 @@ def run_offline(model, audio, beam_size: int) -> tuple[list[str], dict[str, floa
     return text, {"compute_seconds": round(elapsed, 2), "rtf": round(elapsed / duration, 4)}
 
 
-def run_streaming(model, audio, args) -> tuple[list[TimedWord], dict[str, object]]:
-    streamer = LocalAgreementStreamer(
-        make_transcriber(model, args.beam_size, vad=True),
-        trim_seconds=args.trim_seconds,
-        max_buffer_seconds=args.max_buffer_seconds,
+def run_streams(model, audios: list, args) -> list[tuple[list[TimedWord], dict[str, object]]]:
+    """Streams one or more audios on the same model, sharing one simulated clock.
+
+    With several audios (``--concurrent``) each chunk tick processes every stream in turn, as a single
+    STT worker serving system audio and microphone would, so latencies include the queueing.
+    """
+    full = make_transcriber(model, args.beam_size, vad=True)
+    partial = None if args.partial_beam_size in (None, args.beam_size) else make_transcriber(
+        model, args.partial_beam_size, vad=True
     )
-    duration = len(audio) / SAMPLE_RATE
+    states = []
+    for audio in audios:
+        states.append(
+            {
+                "audio": audio,
+                "streamer": LocalAgreementStreamer(
+                    full,
+                    trim_seconds=args.trim_seconds,
+                    max_buffer_seconds=args.max_buffer_seconds,
+                    agreement_interval_seconds=args.agreement_interval,
+                    partial_transcribe=partial,
+                ),
+                "first_seen": {},
+                "commit_latency": [],
+                "first_seen_latency": [],
+                "step_compute": [],
+                "lag": [],
+            }
+        )
     step = int(args.chunk_seconds * SAMPLE_RATE)
-    first_seen: dict[tuple[str, int], float] = {}
-    commit_latency: list[float] = []
-    first_seen_latency: list[float] = []
-    step_compute: list[float] = []
-    lag: list[float] = []
+    longest = max(len(a) for a in audios)
     clock = 0.0
 
-    def remember(words: list[TimedWord], at: float) -> None:
-        for w in words:
-            first_seen.setdefault((w.key, round(w.start)), at)
-
-    def seen_at(w: TimedWord, default: float) -> float:
-        times = [first_seen[k] for d in (-1, 0, 1) if (k := (w.key, round(w.start) + d)) in first_seen]
+    def seen_at(state, w: TimedWord, default: float) -> float:
+        seen = state["first_seen"]
+        times = [seen[k] for d in (-1, 0, 1) if (k := (w.key, round(w.start) + d)) in seen]
         return min(times, default=default)
 
-    for position in range(0, len(audio), step):
-        chunk = audio[position : position + step]
-        audio_time = (position + len(chunk)) / SAMPLE_RATE
-        streamer.insert_audio(chunk)
-        start = max(clock, audio_time)
-        t0 = time.perf_counter()
-        update = streamer.process()
-        compute = time.perf_counter() - t0
-        clock = start + compute
-        step_compute.append(compute)
-        lag.append(clock - audio_time)
-        remember(update.committed + update.tentative, clock)
-        for w in update.committed:
-            commit_latency.append(clock - w.end)
-            first_seen_latency.append(seen_at(w, clock) - w.end)
-
-    final = streamer.finish()
-    for w in final.committed:
-        first_seen_latency.append(seen_at(w, clock) - w.end)
+    for position in range(0, longest, step):
+        for state in states:
+            audio = state["audio"]
+            if position >= len(audio):
+                continue
+            chunk = audio[position : position + step]
+            audio_time = (position + len(chunk)) / SAMPLE_RATE
+            streamer = state["streamer"]
+            streamer.insert_audio(chunk)
+            start = max(clock, audio_time)
+            if (
+                args.skip_partials_when_late is not None
+                and not streamer.next_pass_is_agreement
+                and start - audio_time > args.skip_partials_when_late
+            ):
+                state["skipped_partials"] = state.get("skipped_partials", 0) + 1
+                continue
+            t0 = time.perf_counter()
+            update = streamer.process()
+            compute = time.perf_counter() - t0
+            clock = start + compute
+            state["step_compute"].append(compute)
+            state["lag"].append(clock - audio_time)
+            for w in update.committed + update.tentative:
+                state["first_seen"].setdefault((w.key, round(w.start)), clock)
+            for w in update.committed:
+                state["commit_latency"].append(clock - w.end)
+                state["first_seen_latency"].append(seen_at(state, w, clock) - w.end)
 
     def stats(values: list[float]) -> dict[str, float | None]:
         return {f"p{q}": None if (v := percentile(values, q)) is None else round(v, 3) for q in (50, 95, 99)}
 
-    metrics: dict[str, object] = {
-        "chunk_seconds": args.chunk_seconds,
-        "steps": len(step_compute),
-        "rtf": round(sum(step_compute) / duration, 4),
-        "step_compute_seconds": stats(step_compute),
-        "commit_latency_seconds": stats(commit_latency),
-        "first_seen_latency_seconds": stats(first_seen_latency),
-        "lag_seconds_max": round(max(lag, default=0.0), 3),
-        "lag_seconds_final": round(lag[-1], 3) if lag else 0.0,
-        "words_committed_at_finish": len(final.committed),
-        "silence_trimmed_seconds": round(streamer.silence_trimmed_seconds, 1),
-        "forced_trims": streamer.forced_trims,
-        "forced_trim_ranges": [[round(a, 2), round(b, 2)] for a, b in streamer.forced_trim_ranges],
-    }
-    return list(streamer.committed), metrics
+    results = []
+    for state in states:
+        streamer = state["streamer"]
+        final = streamer.finish()
+        for w in final.committed:
+            state["first_seen_latency"].append(seen_at(state, w, clock) - w.end)
+        duration = len(state["audio"]) / SAMPLE_RATE
+        lag = state["lag"]
+        metrics: dict[str, object] = {
+            "chunk_seconds": args.chunk_seconds,
+            "agreement_interval_seconds": args.agreement_interval,
+            "partial_beam_size": args.partial_beam_size or args.beam_size,
+            "concurrent_streams": len(audios),
+            "steps": len(state["step_compute"]),
+            "skipped_display_passes": state.get("skipped_partials", 0),
+            "rtf": round(sum(state["step_compute"]) / duration, 4),
+            "step_compute_seconds": stats(state["step_compute"]),
+            "commit_latency_seconds": stats(state["commit_latency"]),
+            "first_seen_latency_seconds": stats(state["first_seen_latency"]),
+            "lag_seconds_max": round(max(lag, default=0.0), 3),
+            "lag_seconds_final": round(lag[-1], 3) if lag else 0.0,
+            "words_committed_at_finish": len(final.committed),
+            "silence_trimmed_seconds": round(streamer.silence_trimmed_seconds, 1),
+            "forced_trims": streamer.forced_trims,
+            "forced_trim_ranges": [[round(a, 2), round(b, 2)] for a, b in streamer.forced_trim_ranges],
+        }
+        results.append((list(streamer.committed), metrics))
+    return results
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -155,6 +192,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--chunk-seconds", type=float, default=1.0)
     parser.add_argument("--trim-seconds", type=float, default=15.0)
     parser.add_argument("--max-buffer-seconds", type=float, default=30.0)
+    parser.add_argument("--agreement-interval", type=float, default=0.0,
+                        help="hybrid mode: commit only across >= N s of new audio (0 = every chunk)")
+    parser.add_argument("--partial-beam-size", type=int, default=None, help="beam for display-only passes")
+    parser.add_argument("--skip-partials-when-late", type=float, default=None, metavar="SECONDS",
+                        help="hybrid mode: skip display-only passes when the worker is this far behind")
+    parser.add_argument("--concurrent", action="store_true",
+                        help="stream all meetings simultaneously on one model (system + mic simulation)")
     parser.add_argument("--corpus", type=Path, default=REPO_ROOT / "data" / "corpus" / "ami")
     parser.add_argument("--models-dir", type=Path, default=REPO_ROOT / "models" / "whisper")
     parser.add_argument("--out", type=Path, default=REPO_ROOT / "benchmarks" / "results" / "stt")
@@ -184,6 +228,7 @@ def main(argv: list[str] | None = None) -> int:
         model = WhisperModel(str(model_path), device=args.device, compute_type=args.compute_type)
         report["model_load_seconds"] = round(time.perf_counter() - t0, 2)
 
+        prepared = []
         for meeting in args.meetings:
             audio = load_audio(args.corpus, meeting)
             if args.max_seconds:
@@ -192,6 +237,8 @@ def main(argv: list[str] | None = None) -> int:
             reference = load_reference(args.corpus, meeting)
             ref_tokens = normalize_words(w.text for w in reference.words if w.end <= duration)
             entry: dict[str, object] = {"meeting": meeting, "seconds": round(duration, 1), "reference_words": len(ref_tokens)}
+            prepared.append((meeting, audio, duration, reference, ref_tokens, entry))
+            report["meetings"].append(entry)
 
             if args.mode in ("offline", "both"):
                 text, metrics = run_offline(model, audio, args.beam_size)
@@ -201,38 +248,51 @@ def main(argv: list[str] | None = None) -> int:
                 if args.dump_text:
                     _dump(args, meeting, "offline", " ".join(text))
 
-            if args.mode in ("streaming", "both"):
-                words, metrics = run_streaming(model, audio, args)
-                metrics["wer"] = round(word_error_rate(ref_tokens, normalize_words(w.text for w in words)), 4)
-                ranges = metrics["forced_trim_ranges"]
-                metrics["reference_words_in_forced_trims"] = sum(
-                    1
-                    for w in reference.words
-                    if w.end <= duration and any(a <= w.start and w.end <= b for a, b in ranges)
-                )
-                metrics["committed_words_in_forced_trims"] = sum(
-                    1 for w in words if any(a <= w.start and w.end <= b for a, b in ranges)
-                )
-                entry["streaming"] = metrics
-                print(
-                    f"[{meeting}] streaming WER={metrics['wer']:.3f} RTF={metrics['rtf']:.3f} "
-                    f"commit p50/p95={metrics['commit_latency_seconds']['p50']}/{metrics['commit_latency_seconds']['p95']}s "
-                    f"first-seen p50/p95={metrics['first_seen_latency_seconds']['p50']}/"
-                    f"{metrics['first_seen_latency_seconds']['p95']}s lag max={metrics['lag_seconds_max']}s",
-                    flush=True,
-                )
-                if args.dump_text:
-                    _dump(args, meeting, "streaming", "".join(w.text for w in words))
-            report["meetings"].append(entry)
+        if args.mode in ("streaming", "both"):
+            groups = [prepared] if args.concurrent else [[p] for p in prepared]
+            for group in groups:
+                results = run_streams(model, [p[1] for p in group], args)
+                for (meeting, _, duration, reference, ref_tokens, entry), (words, metrics) in zip(group, results):
+                    _score_streaming(metrics, words, reference, ref_tokens, duration)
+                    entry["streaming"] = metrics
+                    print(
+                        f"[{meeting}] streaming WER={metrics['wer']:.3f} RTF={metrics['rtf']:.3f} "
+                        f"commit p50/p95={metrics['commit_latency_seconds']['p50']}/"
+                        f"{metrics['commit_latency_seconds']['p95']}s "
+                        f"first-seen p50/p95={metrics['first_seen_latency_seconds']['p50']}/"
+                        f"{metrics['first_seen_latency_seconds']['p95']}s lag max={metrics['lag_seconds_max']}s",
+                        flush=True,
+                    )
+                    if args.dump_text:
+                        _dump(args, meeting, "streaming", "".join(w.text for w in words))
 
     report["resources"] = asdict(sampler.summary())
     args.out.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    chunk = "" if args.chunk_seconds == 1.0 else f"_c{args.chunk_seconds:g}"
-    out_file = args.out / f"{stamp}_{args.model}_{args.compute_type}_b{args.beam_size}{chunk}.json"
+    suffix = "" if args.chunk_seconds == 1.0 else f"_c{args.chunk_seconds:g}"
+    if args.agreement_interval:
+        suffix += f"_a{args.agreement_interval:g}"
+    if args.partial_beam_size and args.partial_beam_size != args.beam_size:
+        suffix += f"_pb{args.partial_beam_size}"
+    if args.skip_partials_when_late is not None:
+        suffix += f"_skip{args.skip_partials_when_late:g}"
+    if args.concurrent:
+        suffix += "_concurrent"
+    out_file = args.out / f"{stamp}_{args.model}_{args.compute_type}_b{args.beam_size}{suffix}.json"
     out_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"report: {out_file}")
     return 0
+
+
+def _score_streaming(metrics, words, reference, ref_tokens, duration) -> None:
+    metrics["wer"] = round(word_error_rate(ref_tokens, normalize_words(w.text for w in words)), 4)
+    ranges = metrics["forced_trim_ranges"]
+    metrics["reference_words_in_forced_trims"] = sum(
+        1 for w in reference.words if w.end <= duration and any(a <= w.start and w.end <= b for a, b in ranges)
+    )
+    metrics["committed_words_in_forced_trims"] = sum(
+        1 for w in words if any(a <= w.start and w.end <= b for a, b in ranges)
+    )
 
 
 def _dump(args: argparse.Namespace, meeting: str, mode: str, text: str) -> None:

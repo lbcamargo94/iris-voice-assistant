@@ -181,6 +181,64 @@ def test_silence_trim_waits_for_a_pause_after_the_last_committed_word() -> None:
     assert streamer.buffer_seconds == pytest.approx(2.0)
 
 
+def half_second() -> np.ndarray:
+    return np.zeros(RATE // 2, dtype=np.float32)
+
+
+def test_hybrid_mode_commits_only_on_agreement_passes() -> None:
+    full = ScriptedTranscriber(
+        [
+            [(0.0, 0.4, " a")],  # agreement pass at 1.0 s
+            [(0.0, 0.4, " a"), (1.2, 1.6, " b")],  # agreement pass at 2.0 s
+        ]
+    )
+    partial = ScriptedTranscriber(
+        [
+            [(0.0, 0.3, " uh")],  # display pass at 0.5 s
+            [(0.0, 0.4, " a"), (1.2, 1.5, " be")],  # display pass at 1.5 s
+        ]
+    )
+    streamer = make(full, agreement_interval_seconds=1.0, partial_transcribe=partial)
+    updates = []
+    for _ in range(4):
+        streamer.insert_audio(half_second())
+        updates.append(streamer.process())
+
+    # 0.5 s: display only; 1.0 s: first agreement hypothesis; 1.5 s: display only; 2.0 s: commits "a".
+    assert [texts(u.committed) for u in updates] == [[], [], [], [" a"]]
+    assert texts(updates[0].tentative) == [" uh"]
+    assert texts(updates[2].tentative) == [" a", " be"]  # display pass never commits
+    assert texts(updates[3].tentative) == [" b"]
+    assert len(full.prompts) == 2 and len(partial.prompts) == 2
+
+
+def test_next_pass_is_agreement_reports_hybrid_cadence() -> None:
+    streamer = make(ScriptedTranscriber([[], []]), agreement_interval_seconds=1.0)
+    cadence = []
+    for _ in range(4):
+        streamer.insert_audio(half_second())
+        cadence.append(streamer.next_pass_is_agreement)
+        if cadence[-1]:
+            streamer.process()  # a scheduler skipped the display-only passes
+
+    assert cadence == [False, True, False, True]
+
+
+def test_display_pass_hides_already_committed_words() -> None:
+    full = ScriptedTranscriber([[(0.0, 0.4, " a")], [(0.0, 0.4, " a")]])
+    partial = ScriptedTranscriber([[(0.0, 0.4, " a"), (1.1, 1.4, " next")]])
+    streamer = make(full, partial_transcribe=partial, agreement_interval_seconds=1.0)
+    for _ in range(2):
+        streamer.insert_audio(second())
+        streamer.process()  # commits "a" on the second agreement pass
+    streamer.insert_audio(half_second())
+
+    update = streamer.process()
+
+    assert update.committed == []
+    assert texts(update.tentative) == [" next"]
+
+
 def test_rejects_non_float32_audio() -> None:
     streamer = make(ScriptedTranscriber([]))
 

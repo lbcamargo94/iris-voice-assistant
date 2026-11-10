@@ -63,11 +63,26 @@ class LocalAgreementStreamer:
         max_buffer_seconds: float = 30.0,
         prompt_chars: int = 200,
         silence_keep_seconds: float = 3.0,
+        agreement_interval_seconds: float = 0.0,
+        partial_transcribe: Transcriber | None = None,
     ) -> None:
+        """
+        ``agreement_interval_seconds`` > 0 enables the hybrid mode: ``process()`` may be called more
+        often (e.g. every 0.5 s) to refresh the tentative text, but words are only committed by
+        comparing hypotheses separated by at least this much new audio (e.g. 1 s), which keeps the
+        accuracy of the slower cadence. ``partial_transcribe`` (e.g. greedy decoding) is used for the
+        display-only passes; defaults to ``transcribe``.
+        """
         if not 0 < trim_seconds <= max_buffer_seconds:
             raise ValueError("Require 0 < trim_seconds <= max_buffer_seconds")
         if silence_keep_seconds <= 0:
             raise ValueError("silence_keep_seconds must be positive")
+        if agreement_interval_seconds < 0:
+            raise ValueError("agreement_interval_seconds must be >= 0")
+        self._agreement_interval = agreement_interval_seconds
+        self._partial_transcribe = partial_transcribe or transcribe
+        self._audio_seconds = 0.0
+        self._last_agreement_audio = 0.0
         self._silence_keep_seconds = silence_keep_seconds
         self.silence_trimmed_seconds = 0.0
         """Audio dropped because the model found no words in it (not counted as loss)."""
@@ -99,13 +114,30 @@ class LocalAgreementStreamer:
         if samples.dtype != np.float32 or samples.ndim != 1:
             raise ValueError("Expected 1-D float32 samples")
         self._buffer = np.concatenate([self._buffer, samples])
+        self._audio_seconds += len(samples) / self._sample_rate
+
+    @property
+    def next_pass_is_agreement(self) -> bool:
+        """False when the next ``process()`` would be a display-only pass (hybrid mode).
+
+        Schedulers may skip display-only passes when the worker is behind real time: committed
+        output is unaffected, only the refresh of tentative text is delayed.
+        """
+        # Small tolerance so a 1.0 s interval is reached after two 0.5 s chunks despite float error.
+        return self._audio_seconds - self._last_agreement_audio >= self._agreement_interval - 1e-6
 
     def process(self) -> StreamingUpdate:
         """Re-transcribes the buffer and returns newly committed and current tentative words."""
         if len(self._buffer) == 0:
             return StreamingUpdate()
-        hypothesis = [w.shifted(self._buffer_offset) for w in self._transcribe(self._buffer, self._prompt())]
+        agreement_pass = self.next_pass_is_agreement
+        transcribe = self._transcribe if agreement_pass else self._partial_transcribe
+        hypothesis = [w.shifted(self._buffer_offset) for w in transcribe(self._buffer, self._prompt())]
         hypothesis = self._drop_already_committed(hypothesis)
+        if not agreement_pass:
+            # Display-only pass: refresh the tentative text; agreement state is untouched.
+            return StreamingUpdate(tentative=hypothesis)
+        self._last_agreement_audio = self._audio_seconds
         heard_nothing_new = not hypothesis
 
         newly_committed: list[TimedWord] = []
