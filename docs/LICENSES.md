@@ -58,6 +58,7 @@ Revisado em 2026-11-09 a partir dos metadados publicados (PyPI, Hugging Face, p�
 | av, onnxruntime, tokenizers, huggingface-hub | ver uv.lock | bench (dep. de faster-whisper) | Decodificação, VAD Silero, tokenização, download | BSD/LGPL (av usa FFmpeg LGPL), MIT, Apache-2.0, Apache-2.0 | `av` não é usado: o áudio entra como array |
 | psutil | 7.x | bench | Amostragem de CPU/RAM | BSD-3-Clause | |
 | nvidia-ml-py | 13.x | bench | Amostragem de VRAM (NVML) | BSD-3-Clause | |
+| sentencepiece | 0.2.3 | bench | Tokenização Opus-MT/Argos | Apache-2.0 | Mantido pelo Google; wheel de ~1,6 MB. O pacote `argostranslate` **não** é usado, porque puxaria stanza (PyTorch) e spaCy |
 
 `huggingface-hub` é usado somente para downloads explícitos (`--allow-download`), com `HF_HUB_DISABLE_TELEMETRY=1`.
 
@@ -71,7 +72,12 @@ Revisado em 2026-11-09 a partir dos metadados publicados (PyPI, Hugging Face, p�
 | faster-whisper large-v3-turbo | huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo (redireciona para dropbox-dash/…) | 0a363e9161 | 1547 MiB | MIT |
 | AMI Meeting Corpus: IS1009a, ES2004a (Mix-Headset) + anotações manuais 1.6.2 | groups.inf.ed.ac.uk/ami | ver `benchmarks/corpus/ami.manifest.json` | ~83 MB | CC BY 4.0 — atribuição obrigatória |
 
+| Opus-MT opus-mt-tc-big-en-pt (release Marian 2022-03-13), convertido para CTranslate2 float16 | object.pouta.csc.fi/Tatoeba-MT-models/eng-por (Helsinki-NLP) | ver `benchmarks/models/translation.manifest.json` | 823 MiB zip → 448 MiB convertido | CC BY 4.0 — atribuição obrigatória |
+| Argos Translate translate-en_pt 1.9 (somente baseline) | argos-net.com (índice argospm-index) | idem | 63 MiB | CC BY 4.0 (derivado de OPUS-MT, conforme README do pacote) |
+
 Atribuição AMI: *Carletta, J. et al. (2005). The AMI Meeting Corpus: A Pre-Announcement. MLMI 2005.* Dados usados somente como material de teste; não redistribuídos neste repositório.
+
+Atribuição Opus-MT: *Tiedemann, J. and Thottingal, S. (2020). OPUS-MT — Building open translation services for the World. EAMT 2020*, e *Tiedemann, J. (2020). The Tatoeba Translation Challenge. WMT 2020*. Helsinki-NLP, Universidade de Helsinki. Se o modelo for distribuído com o produto, a atribuição precisa aparecer na tela "Sobre" ou nos avisos de terceiros.
 
 ## Distribuição
 

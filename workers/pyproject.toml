@@ -18,6 +18,7 @@ bench = [
     "nvidia-cudnn-cu12>=9.1,<10",    # cuDNN 9 DLLs for CTranslate2 (NVIDIA EULA)
     "psutil>=6.0,<8",                # CPU/RAM sampling (BSD-3-Clause)
     "nvidia-ml-py>=12.0",            # VRAM sampling via NVML (BSD-3-Clause)
+    "sentencepiece>=0.2,<0.3",       # Opus-MT/Argos tokenization (Apache-2.0)
 ]
 
 [build-system]

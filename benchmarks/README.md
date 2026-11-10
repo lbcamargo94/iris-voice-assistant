@@ -1,12 +1,13 @@
 # Benchmarks (POC-001A)
 
-Relatórios reproduzíveis de STT, tradução, LLM e TTS. Os JSON em `results/` contêm **somente métricas**, ambiente, versões e SHA-256 dos modelos — nunca transcrições.
+Relatórios reproduzíveis de STT, tradução, LLM e TTS. Os JSON em `results/` contêm **somente métricas**, ambiente, versões e SHA-256 dos modelos — nunca transcrições. Exceção: os relatórios de tradução incluem as saídas, porque as frases de referência são texto original do projeto (MIT), não conteúdo de reuniões.
 
 ## Preparação
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File benchmarks\fetch-corpus.ps1   # AMI (~83 MB, CC BY 4.0, SHA-256 verificado)
 cd workers; $env:UV_CACHE_DIR = "..\.cache\uv"; uv sync --group bench             # ~1,5 GB (CUDA/cuDNN via pip)
+powershell -NoProfile -ExecutionPolicy Bypass -File benchmarks\fetch-translation-models.ps1  # Opus-MT + Argos (~930 MB, CC BY 4.0)
 ```
 
 ## STT (passo 2) — faster-whisper + LocalAgreement-2
@@ -101,3 +102,54 @@ Zero cortes forçados e zero palavras perdidas em todas as configurações. "Pul
 - Reuniões completas e mais reuniões AMI; normalização de números.
 - Resource Manager: detectar atraso crescente quando outro programa usa a GPU e avisar o usuário.
 - Confirmação p95 de 3–4 s + tradução precisa caber na meta de 4 s do RNF-015: medir no POC-001D.
+
+## Tradução (passo 3) — Opus-MT tc-big × Argos
+
+```powershell
+cd workers
+uv run --group bench python -m iris_workers.bench.translation --engine opus                      # >>pob<<, GPU int8_float16, beam 4
+uv run --group bench python -m iris_workers.bench.translation --engine argos --target-token ">>pob<<"
+uv run --group bench python -m iris_workers.bench.translation --engine opus --device cpu --compute-type int8 --intra-threads 4 --rounds 1
+```
+
+- **Referência:** 50 frases originais em `translation/reference-en-ptbr.md`, de 8 categorias, incluindo saída de STT sem pontuação. Ainda são **rascunho**, sem revisão humana, e vão ser corrigidas na prática.
+- **chrF:** n-gramas de caracteres de 1 a 6, beta 2, uma só referência. As alternativas da coluna Notas não entram na pontuação. Com 50 frases, diferenças de 1 a 2 pontos não são significativas.
+- **Latência:** medida por frase com batch 1, como no pipeline, que traduz cada oração confirmada. São 3 passadas na GPU e 1 na CPU.
+- **PT-PT:** contagem de marcadores inequívocos (`translation_quality.PT_PT_MARKERS`).
+- **Execução:** os dois motores rodam no CTranslate2 4.8.5 com SentencePiece 0.2.3, sem PyTorch e sem o pacote `argostranslate`.
+
+### Resultados — 2026-11-10, RTX 4060 Ti 8 GB, Ryzen 7 5800X3D
+
+Durante a medição, o desktop (Chrome, Teams, Discord) gerava picos de GPU de 5 a 60%, como num uso normal.
+
+| Motor | Token | Dispositivo | Beam | chrF | Latência p50 / p95 (ms) | Frases com PT-PT | VRAM Δ (MiB) | RSS (MiB) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **Opus-MT tc-big** | `>>pob<<` | GPU int8_float16 | 4 | **68,6** | 56 / 76 | **0** | ~550 | 829 |
+| Opus-MT tc-big | `>>pob<<` | GPU float16 | 4 | 68,8 | 45 / 68 | 0 | ~810 | 784 |
+| Opus-MT tc-big | `>>pob<<` | GPU int8_float16 | 1 | 67,5 | 48 / 66 | 0 | ~530 | 796 |
+| Opus-MT tc-big | `>>pob<<` | CPU int8, 4 threads | 4 | 68,7 | 151 / 207 | 0 | 0 | 443 |
+| Opus-MT tc-big | `>>por<<` | GPU int8_float16 | 4 | 65,8 | 60 / 86 | 3 (ficheiro, "estar a") | ~480 | 816 |
+| Argos 1.9 | `>>pob<<` (config alterado) | GPU int8_float16 | 4 | 66,2 | 51 / 72 | 0 | ~310 | 798 |
+| Argos 1.9 | padrão (`>>por<<`) | GPU int8_float16 | 4 | 62,7 | 54 / 74 | 8 (equipa, "estar a", ficheiro, utilizador) | ~280 | 799 |
+| Argos 1.9 | padrão (`>>por<<`) | CPU int8, 4 threads | 4 | 62,2 | 33 / 46 | 8 | 0 | 169 |
+
+Os modelos carregam em 0,2 a 1 s. A VRAM é medida no dispositivo inteiro: é o pico menos a linha de base.
+
+### Conclusões
+
+1. **O `>>pob<<` é necessário.** O token `>>por<<` produz PT-PT nos dois motores. O pacote `translate-en_pb` do Argos é **o mesmo modelo** do `translate-en_pt`, com o mesmo SHA-256 e só os metadados diferentes, e o token `>>por<<` vem fixo no `config.json`.
+2. **Escolha: Opus-MT tc-big com `>>pob<<` e beam 4.** Ele tem o maior chrF. Na leitura das saídas, o Argos com `>>pob<<` **omite trechos**: "batch job" (013), "Okay, so" (027), "follow-up" (035) e "the thing is" (048). O Argos também erra mais termos: "inseto" para bug, "corrida" para sprint, "acidente" para crash.
+3. **A latência não é o gargalo.** Na GPU fica entre 45 e 76 ms por frase, e na CPU entre 151 e 207 ms. A tradução ocupa menos de 5% da meta de 4 s do RNF-015. O orçamento continua dominado pela confirmação do STT.
+4. **A escolha do dispositivo fica para o passo 6.** A CPU int8 não usa VRAM e não disputa a GPU com o STT, ao custo de cerca de 100 ms a mais. A GPU int8_float16 ocupa cerca de 0,55 GB. A decisão final sai da medição combinada (STT, tradução e LLM).
+5. **O Marian descarta tudo depois da primeira frase** de uma entrada com várias. O adaptador separa as frases antes de traduzir (`split_sentences`). Medido nos casos 025 e 045 antes da correção.
+6. **Erros que se repetem nos dois motores.** Os termos técnicos que se falam em inglês no Brasil saem traduzidos ao pé da letra:
+   - build → construção, flaky → escamoso, pull request → pedido, merge → fusão;
+   - feature flag → bandeira, endpoint → ponto final, dead letter queue → fila de cartas morta, ticket → bilhete.
+
+   As expressões idiomáticas também falham: "take this offline" → tirar do ar, "you broke up" → você terminou, "final call" → última chamada. Isso justifica o glossário de termos que não devem ser traduzidos e o refinamento opcional por LLM do ADR-010. O LLM é o passo 4.
+
+### Pendências do passo 3
+
+- Revisar as referências na prática e aceitar alternativas na pontuação, com múltiplas referências.
+- Glossário e proteção de termos técnicos, e normalizador PT-PT→PT-BR (ADR-010, itens 3 e 4). Nesta medição, com `>>pob<<`, nenhum marcador apareceu.
+- Traduzir orações confirmadas vindas do STT real (AMI), não só frases escritas.

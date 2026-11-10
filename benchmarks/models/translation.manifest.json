@@ -1,0 +1,47 @@
+{
+  "purpose": "POC-001A step 3 translation benchmark (ADR-010)",
+  "localRoot": "models/translation",
+  "notes": "Origins publish no SHA-256; the MD5 below is the server ETag checked on first download (2026-11-10), the SHA-256 was computed then and is the pinned value.",
+  "files": [
+    {
+      "name": "Opus-MT opus-mt-tc-big-en-pt (Marian release 2022-03-13)",
+      "path": "downloads/opus-mt-tc-big-eng-por-2022-03-13.zip",
+      "url": "https://object.pouta.csc.fi/Tatoeba-MT-models/eng-por/opusTCv20210807+bt_transformer-big_2022-03-13.zip",
+      "license": "CC-BY-4.0",
+      "attribution": "Tiedemann, J. and Thottingal, S. (2020). OPUS-MT - Building open translation services for the World. EAMT 2020. Helsinki-NLP, University of Helsinki.",
+      "bytes": 863398393,
+      "md5": "398e23f887e81089dc6229e00130a959",
+      "sha256": "62aeb8916c2463351a2dd8d1ea51fcf3929fb3daab7261dcae8d5599e886c008",
+      "extractTo": "opus-mt-tc-big-en-pt-marian",
+      "exclude": ["*.log"]
+    },
+    {
+      "name": "Argos Translate translate-en_pt 1.9",
+      "path": "downloads/translate-en_pt-1_9.argosmodel",
+      "url": "https://argos-net.com/v1/translate-en_pt-1_9.argosmodel",
+      "license": "CC-BY-4.0 (derived from OPUS-MT, per package README)",
+      "attribution": "Tiedemann, J. and Thottingal, S. (2020). OPUS-MT. Packaged by Argos Translate.",
+      "bytes": 66179184,
+      "md5": "a3b3469ac41349196a8c6833ce4df195",
+      "sha256": "0c5350a2fa5b923de1346edc0d42e08e38bab2e33cede3a0b9a48eb4281ad8a9",
+      "extractTo": "argos",
+      "exclude": ["*/stanza/*"]
+    }
+  ],
+  "conversions": [
+    {
+      "tool": "ct2-opus-mt-converter (CTranslate2)",
+      "from": "opus-mt-tc-big-en-pt-marian",
+      "to": "opus-mt-tc-big-en-pt-ct2-f16",
+      "quantization": "float16",
+      "modelBinSha256": "ac2eebe348101f4b232de58f1751a4baaa63209abb2db32d81e875360484638f"
+    }
+  ],
+  "notInUse": [
+    {
+      "name": "Argos translate-en_pb 1.9",
+      "url": "https://argos-net.com/v1/translate-en_pb-1_9.argosmodel",
+      "reason": "Same model.bin and sentencepiece.model as translate-en_pt 1.9 (identical SHA-256); only metadata differs."
+    }
+  ]
+}

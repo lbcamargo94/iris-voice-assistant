@@ -1,6 +1,6 @@
 # ADR-010 — Tradução EN→PT-BR em camadas
 
-- **Estado:** Aceita, sujeita ao benchmark POC-001A
+- **Estado:** Aceita; motor rápido confirmado pelo benchmark POC-001A (ver "Refinamento 2026-11-10")
 - **Data:** 2026-11-09
 
 ## Contexto
@@ -14,6 +14,14 @@ O produto exige português **brasileiro**. O pacote Argos en→pt não garante a
 3. **Refinamento opcional por LLM local:** com prompt PT-BR e glossário, quando habilitado e com recursos disponíveis; a versão refinada substitui a exibida com marca de revisão, preservando ambas as versões.
 4. **Normalizador PT-PT→PT-BR:** substituições léxicas e de construção determinísticas (ex.: ecrã→tela, utilizador→usuário, "estar a + infinitivo"→gerúndio) aplicadas às duas camadas, além do glossário do usuário.
 5. **Excluído:** NLLB-200 (licença não comercial).
+
+## Refinamento 2026-11-10 (benchmark POC-001A, `benchmarks/README.md`)
+
+1. **Token `>>pob<<` confirmado.** Com `>>por<<`, os dois motores produzem PT-PT (ficheiro, equipa, utilizador, "estar a + infinitivo"). Com `>>pob<<` não houve nenhum marcador nas 50 frases.
+2. **Motor rápido: Opus-MT tc-big com `>>pob<<` e beam 4.** O chrF foi 68,6, contra 66,2 do Argos com `>>pob<<`, e o Argos omitiu trechos das frases. O Argos fica descartado como motor, mas pode servir de baseline.
+3. **O adaptador separa as frases antes de traduzir.** Modelos Marian descartam o texto depois da primeira frase de uma entrada.
+4. **Latência:** 45 a 76 ms por frase na GPU e 151 a 207 ms na CPU int8 (4 threads). A escolha entre CPU e GPU sai da medição combinada do passo 6. A CPU deixa a GPU livre para o STT.
+5. **Proposta, ainda pendente de aprovação: glossário na camada rápida.** Termos técnicos comuns (build, merge, pull request, feature flag, endpoint, ticket) saem traduzidos ao pé da letra. A proposta é proteger os termos que não devem ser traduzidos e aplicar o glossário do usuário já na camada rápida, sem depender só do refinamento por LLM.
 
 ## Consequências
 

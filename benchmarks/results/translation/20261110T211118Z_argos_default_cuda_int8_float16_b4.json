@@ -1,0 +1,496 @@
+{
+  "benchmark": "translation",
+  "created_utc": "2026-11-10T21:11:09+00:00",
+  "environment": {
+    "python_version": "3.12.16",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "machine": "AMD64",
+    "processor": "AMD64 Family 25 Model 33 Stepping 2, AuthenticAMD",
+    "gpus": [
+      {
+        "name": "NVIDIA GeForce RTX 4060 Ti",
+        "memory_total_mib": 8188,
+        "driver_version": "616.92"
+      }
+    ]
+  },
+  "versions": {
+    "ctranslate2": "4.8.5",
+    "sentencepiece": "0.2.3"
+  },
+  "model": {
+    "engine": "argos",
+    "model_dir": "models\\translation\\argos\\translate-en_pt-1_9\\model",
+    "model_bin_sha256": "a68dd89c9d226e09cef948a01ded22bede8858326af89644f1b715efe39e7018",
+    "target_token": "config default (>>por<<)"
+  },
+  "config": {
+    "engine": "argos",
+    "target_token": null,
+    "device": "cuda",
+    "compute_type": "int8_float16",
+    "beam_size": 4,
+    "intra_threads": 0,
+    "rounds": 3,
+    "references": "D:\\workspace\\IrisVoiceAssistant\\benchmarks\\translation\\reference-en-ptbr.md"
+  },
+  "reference_sentences": 50,
+  "reference_states": {
+    "rascunho": 50
+  },
+  "metric_notes": "chrF: char 1-6-grams, beta 2, case-sensitive, whitespace ignored, single reference (alternatives in Notas are not scored). PT-PT markers: unambiguous European forms only.",
+  "model_load_seconds": 0.25,
+  "results": {
+    "chrf": 62.68,
+    "chrf_by_category": {
+      "status": 64.3,
+      "tecnico": 69.07,
+      "pergunta": 52.87,
+      "decisao": 65.79,
+      "tarefa": 54.83,
+      "numeros": 79.54,
+      "informal": 50.73,
+      "stt": 56.4
+    },
+    "latency_ms": {
+      "p50": 53.7,
+      "p95": 73.9,
+      "max": 103.4,
+      "mean": 54.7
+    },
+    "source_chars_mean": 59.9,
+    "pt_pt_sentences": 8,
+    "pt_pt_markers": {
+      "equipa": 3,
+      "estar a + infinitivo": 3,
+      "ficheiro": 1,
+      "utilizador": 1
+    }
+  },
+  "resources": {
+    "cpu_percent_avg": 6.3,
+    "cpu_percent_max": 7.4,
+    "rss_mib_max": 798.6,
+    "vram_used_mib_baseline": 2257.0,
+    "vram_used_mib_max": 2534.3,
+    "samples": 33
+  },
+  "translations": [
+    {
+      "id": "001",
+      "category": "status",
+      "source": "I finished the integration tests yesterday, and they're all passing now.",
+      "reference": "Terminei os testes de integração ontem e agora todos estão passando.",
+      "output": "Terminei os testes de integração ontem, e estão todos a passar agora.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "002",
+      "category": "status",
+      "source": "We're still blocked by the API changes from the platform team.",
+      "reference": "Ainda estamos travados pelas mudanças na API do time de plataforma.",
+      "output": "Ainda estamos bloqueados pelas mudanças na API da equipa de plataforma.",
+      "pt_pt_markers": [
+        "equipa"
+      ]
+    },
+    {
+      "id": "003",
+      "category": "status",
+      "source": "The migration is about eighty percent done, but the last part is the hardest.",
+      "reference": "A migração está uns oitenta por cento pronta, mas a última parte é a mais difícil.",
+      "output": "A migração é cerca de oitenta por cento feita, mas a última parte é a mais difícil.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "004",
+      "category": "status",
+      "source": "I didn't have time to look at the bug you mentioned last week.",
+      "reference": "Não tive tempo de olhar o bug que você mencionou semana passada.",
+      "output": "Não tive tempo de olhar para o insecto que mencionaste na semana passada.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "005",
+      "category": "status",
+      "source": "The build has been failing since this morning because of a flaky test.",
+      "reference": "O build está falhando desde hoje de manhã por causa de um teste instável.",
+      "output": "A construção tem falhado desde esta manhã por causa de um teste escamoso.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "006",
+      "category": "status",
+      "source": "Most of the work this sprint went into fixing performance issues.",
+      "reference": "A maior parte do trabalho desta sprint foi para corrigir problemas de desempenho.",
+      "output": "A maior parte do trabalho deste sprint foi para corrigir problemas de desempenho.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "007",
+      "category": "status",
+      "source": "We rolled back the release because the error rate went up after the deploy.",
+      "reference": "Fizemos rollback da versão porque a taxa de erros subiu depois do deploy.",
+      "output": "Retrocedemos o lançamento porque a taxa de erro subiu após o implante.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "008",
+      "category": "status",
+      "source": "Staging is up again, so you can test your changes there.",
+      "reference": "O ambiente de staging voltou, então você pode testar suas mudanças lá.",
+      "output": "O staging voltou a subir, para que possas testar as tuas alterações.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "009",
+      "category": "tecnico",
+      "source": "We need to add an index to that table, otherwise the query will time out.",
+      "reference": "Precisamos adicionar um índice naquela tabela, senão a consulta vai dar timeout.",
+      "output": "Precisamos adicionar um índice a essa tabela, caso contrário, a consulta vai acabar.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "010",
+      "category": "tecnico",
+      "source": "The memory leak only happens when the cache is full.",
+      "reference": "O vazamento de memória só acontece quando o cache está cheio.",
+      "output": "A fuga de memória só acontece quando o cache está cheio.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "011",
+      "category": "tecnico",
+      "source": "Can you open a pull request so we can review it before the merge?",
+      "reference": "Você pode abrir um pull request para revisarmos antes do merge?",
+      "output": "Você pode abrir um pedido de puxar para que possamos revê-lo antes da fusão?",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "012",
+      "category": "tecnico",
+      "source": "The service retries three times and then sends the message to a dead letter queue.",
+      "reference": "O serviço tenta de novo três vezes e depois manda a mensagem para uma dead letter queue.",
+      "output": "O serviço repete três vezes e depois envia a mensagem para uma fila de letras morta.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "013",
+      "category": "tecnico",
+      "source": "Latency spikes every hour when the batch job starts.",
+      "reference": "A latência dá picos a cada hora, quando o job em lote começa.",
+      "output": "A latência aumenta a cada hora quando o trabalho em lote começa.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "014",
+      "category": "tecnico",
+      "source": "We should move the secrets out of the config file and into the vault.",
+      "reference": "Devemos tirar os segredos do arquivo de configuração e colocar no cofre.",
+      "output": "Devíamos tirar os segredos do ficheiro de configuração e entrar no cofre.",
+      "pt_pt_markers": [
+        "ficheiro"
+      ]
+    },
+    {
+      "id": "015",
+      "category": "tecnico",
+      "source": "The new endpoint returns a paginated list, twenty items per page.",
+      "reference": "O novo endpoint retorna uma lista paginada, vinte itens por página.",
+      "output": "O novo endpoint retorna uma lista paginada, vinte itens por página.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "016",
+      "category": "tecnico",
+      "source": "If we upgrade the library, we'll have to rewrite part of the authentication flow.",
+      "reference": "Se atualizarmos a biblioteca, vamos ter que reescrever parte do fluxo de autenticação.",
+      "output": "Se atualizarmos a biblioteca, teremos que reescrever parte do fluxo de autenticação.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "017",
+      "category": "tecnico",
+      "source": "The dashboard shows the CPU usage, but not the memory.",
+      "reference": "O dashboard mostra o uso de CPU, mas não o de memória.",
+      "output": "O painel mostra o uso da CPU, mas não a memória.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "018",
+      "category": "tecnico",
+      "source": "Let's keep the old version behind a feature flag for a couple of weeks.",
+      "reference": "Vamos manter a versão antiga atrás de uma feature flag por umas duas semanas.",
+      "output": "Vamos manter a versão antiga atrás de uma bandeira por algumas semanas.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "019",
+      "category": "pergunta",
+      "source": "Do you have any concerns about the timeline?",
+      "reference": "Você tem alguma preocupação com o cronograma?",
+      "output": "Tem alguma preocupação com a linha do tempo?",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "020",
+      "category": "pergunta",
+      "source": "What do you think, should we ship it on Friday or wait until Monday?",
+      "reference": "O que você acha, a gente lança na sexta ou espera até segunda?",
+      "output": "O que achas, devemos enviá-lo na sexta-feira ou esperar até segunda-feira?",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "021",
+      "category": "pergunta",
+      "source": "Could you share your screen so we can all see the error?",
+      "reference": "Você pode compartilhar a tela para todo mundo ver o erro?",
+      "output": "Você poderia compartilhar sua tela para que todos possamos ver o erro?",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "022",
+      "category": "pergunta",
+      "source": "Who's going to own the follow-up with the client?",
+      "reference": "Quem vai ficar responsável pelo retorno ao cliente?",
+      "output": "Quem vai ser o dono do acompanhamento com o cliente?",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "023",
+      "category": "pergunta",
+      "source": "Is anyone else seeing this issue, or is it just me?",
+      "reference": "Mais alguém está vendo esse problema ou sou só eu?",
+      "output": "Mais alguém está a ver esta questão, ou sou só eu?",
+      "pt_pt_markers": [
+        "estar a + infinitivo"
+      ]
+    },
+    {
+      "id": "024",
+      "category": "pergunta",
+      "source": "How long do you think it'll take to fix?",
+      "reference": "Quanto tempo você acha que vai levar para corrigir?",
+      "output": "Quanto tempo achas que vai demorar a arranjar?",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "025",
+      "category": "pergunta",
+      "source": "Sorry, can you repeat the last part? You broke up a little.",
+      "reference": "Desculpa, pode repetir a última parte? Você cortou um pouco.",
+      "output": "Desculpe, pode repetir a última parte? Vocês acabaram um pouco.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "026",
+      "category": "pergunta",
+      "source": "Did we ever get an answer from legal about the contract?",
+      "reference": "A gente chegou a ter uma resposta do jurídico sobre o contrato?",
+      "output": "Alguma vez obtivemos uma resposta legal sobre o contrato?",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "027",
+      "category": "decisao",
+      "source": "Okay, so we agreed to postpone the launch by one week.",
+      "reference": "Certo, então combinamos adiar o lançamento em uma semana.",
+      "output": "Concordamos em adiar o lançamento por uma semana.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "028",
+      "category": "decisao",
+      "source": "Let's go with the second option, it's cheaper and easier to maintain.",
+      "reference": "Vamos com a segunda opção, é mais barata e mais fácil de manter.",
+      "output": "Vamos com a segunda opção, é mais barato e mais fácil de manter.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "029",
+      "category": "decisao",
+      "source": "We decided not to support the old browsers anymore.",
+      "reference": "Decidimos não dar mais suporte aos navegadores antigos.",
+      "output": "Decidimos não apoiar mais os navegadores antigos.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "030",
+      "category": "decisao",
+      "source": "The final call is Maria's, but the team is leaning towards option A.",
+      "reference": "A decisão final é da Maria, mas o time está tendendo para a opção A.",
+      "output": "A última chamada é da Maria, mas a equipa está inclinada para a opção A.",
+      "pt_pt_markers": [
+        "equipa"
+      ]
+    },
+    {
+      "id": "031",
+      "category": "tarefa",
+      "source": "I'll send the meeting notes to everyone after the call.",
+      "reference": "Vou mandar a ata da reunião para todo mundo depois da call.",
+      "output": "Enviarei as notas da reunião a todos depois da chamada.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "032",
+      "category": "tarefa",
+      "source": "John, can you update the ticket and assign it to me?",
+      "reference": "John, você pode atualizar o ticket e atribuir para mim?",
+      "output": "John, podes atualizar o bilhete e atribuir-mo?",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "033",
+      "category": "tarefa",
+      "source": "Please review the document by Thursday so we can sign off on it.",
+      "reference": "Por favor, revisem o documento até quinta para podermos aprovar.",
+      "output": "Por favor, reveja o documento até quinta-feira para que possamos assinar.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "034",
+      "category": "tarefa",
+      "source": "Someone needs to talk to the vendor about the license renewal.",
+      "reference": "Alguém precisa falar com o fornecedor sobre a renovação da licença.",
+      "output": "Alguém precisa de falar com o vendedor sobre a renovação da licença.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "035",
+      "category": "tarefa",
+      "source": "I'll set up a follow-up meeting for next Tuesday at ten.",
+      "reference": "Vou marcar uma reunião de acompanhamento para terça que vem às dez.",
+      "output": "Marcarei uma reunião para terça-feira às dez.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "036",
+      "category": "numeros",
+      "source": "The budget for the next quarter is two hundred and fifty thousand dollars.",
+      "reference": "O orçamento do próximo trimestre é de duzentos e cinquenta mil dólares.",
+      "output": "O orçamento para o próximo trimestre é de duzentos e cinquenta mil dólares.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "037",
+      "category": "numeros",
+      "source": "Response time went from 300 milliseconds down to 120.",
+      "reference": "O tempo de resposta caiu de 300 milissegundos para 120.",
+      "output": "O tempo de resposta passou de 300 milissegundos para 120.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "038",
+      "category": "numeros",
+      "source": "We have about 1.5 million active users, up 12% from last year.",
+      "reference": "Temos cerca de 1,5 milhão de usuários ativos, 12% a mais que no ano passado.",
+      "output": "Temos cerca de 1,5 milhões de utilizadores activos, um aumento de 12% em relação ao ano passado.",
+      "pt_pt_markers": [
+        "utilizador"
+      ]
+    },
+    {
+      "id": "039",
+      "category": "numeros",
+      "source": "The deadline is March 3rd, which gives us less than three weeks.",
+      "reference": "O prazo é 3 de março, o que nos dá menos de três semanas.",
+      "output": "O prazo é 3 de março, o que nos dá menos de três semanas.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "040",
+      "category": "numeros",
+      "source": "Version 2.4 fixes the crash on startup.",
+      "reference": "A versão 2.4 corrige o travamento na inicialização.",
+      "output": "A versão 2.4 corrige a falha na inicialização.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "041",
+      "category": "informal",
+      "source": "That's a good point, I hadn't thought about that.",
+      "reference": "Bom ponto, eu não tinha pensado nisso.",
+      "output": "É um bom ponto de vista, não tinha pensado nisso.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "042",
+      "category": "informal",
+      "source": "Let's not reinvent the wheel here.",
+      "reference": "Não vamos reinventar a roda aqui.",
+      "output": "Não vamos reinventar a roda aqui.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "043",
+      "category": "informal",
+      "source": "We're running out of time, so let's wrap up.",
+      "reference": "Estamos ficando sem tempo, então vamos encerrar.",
+      "output": "Estamos a ficar sem tempo, por isso vamos acabar.",
+      "pt_pt_markers": [
+        "estar a + infinitivo"
+      ]
+    },
+    {
+      "id": "044",
+      "category": "informal",
+      "source": "I'm on the same page as Alex on this one.",
+      "reference": "Concordo com o Alex nessa.",
+      "output": "Estou na mesma página que o Alex.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "045",
+      "category": "informal",
+      "source": "Can we take this offline? It's getting too detailed.",
+      "reference": "Podemos conversar sobre isso depois, à parte? Está ficando detalhado demais.",
+      "output": "Podemos desligar isto? Está a ficar muito detalhado.",
+      "pt_pt_markers": [
+        "estar a + infinitivo"
+      ]
+    },
+    {
+      "id": "046",
+      "category": "stt",
+      "source": "so um basically what we need is uh a way to track the the requests",
+      "reference": "então basicamente o que a gente precisa é um jeito de rastrear as requisições",
+      "output": "Então, basicamente, o que precisamos é de uma maneira de rastrear os pedidos.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "047",
+      "category": "stt",
+      "source": "yeah no I think that makes sense but we should double check with the security team first",
+      "reference": "é, não, acho que faz sentido, mas devemos confirmar com o time de segurança antes",
+      "output": "Sim, não, acho que faz sentido, mas devíamos verificar com a equipa de segurança primeiro.",
+      "pt_pt_markers": [
+        "equipa"
+      ]
+    },
+    {
+      "id": "048",
+      "category": "stt",
+      "source": "the thing is we can't really scale it without changing the database",
+      "reference": "o problema é que a gente não consegue escalar isso sem mudar o banco de dados",
+      "output": "O problema é que não podemos dimensioná-lo sem mudar a base de dados.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "049",
+      "category": "stt",
+      "source": "I mean it works but it's not it's not ideal you know",
+      "reference": "quer dizer, funciona, mas não é ideal, sabe",
+      "output": "Quer dizer, funciona, mas não é o ideal.",
+      "pt_pt_markers": []
+    },
+    {
+      "id": "050",
+      "category": "stt",
+      "source": "okay cool so next item on the agenda is the hiring plan",
+      "reference": "beleza, então o próximo item da pauta é o plano de contratação",
+      "output": "OK legal então próximo item na agenda é o plano de contratação",
+      "pt_pt_markers": []
+    }
+  ]
+}
