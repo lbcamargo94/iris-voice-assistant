@@ -136,7 +136,9 @@ def run_streaming(model, audio, args) -> tuple[list[TimedWord], dict[str, object
         "lag_seconds_max": round(max(lag, default=0.0), 3),
         "lag_seconds_final": round(lag[-1], 3) if lag else 0.0,
         "words_committed_at_finish": len(final.committed),
+        "silence_trimmed_seconds": round(streamer.silence_trimmed_seconds, 1),
         "forced_trims": streamer.forced_trims,
+        "forced_trim_ranges": [[round(a, 2), round(b, 2)] for a, b in streamer.forced_trim_ranges],
     }
     return list(streamer.committed), metrics
 
@@ -202,6 +204,15 @@ def main(argv: list[str] | None = None) -> int:
             if args.mode in ("streaming", "both"):
                 words, metrics = run_streaming(model, audio, args)
                 metrics["wer"] = round(word_error_rate(ref_tokens, normalize_words(w.text for w in words)), 4)
+                ranges = metrics["forced_trim_ranges"]
+                metrics["reference_words_in_forced_trims"] = sum(
+                    1
+                    for w in reference.words
+                    if w.end <= duration and any(a <= w.start and w.end <= b for a, b in ranges)
+                )
+                metrics["committed_words_in_forced_trims"] = sum(
+                    1 for w in words if any(a <= w.start and w.end <= b for a, b in ranges)
+                )
                 entry["streaming"] = metrics
                 print(
                     f"[{meeting}] streaming WER={metrics['wer']:.3f} RTF={metrics['rtf']:.3f} "
@@ -217,7 +228,8 @@ def main(argv: list[str] | None = None) -> int:
     report["resources"] = asdict(sampler.summary())
     args.out.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    out_file = args.out / f"{stamp}_{args.model}_{args.compute_type}_b{args.beam_size}.json"
+    chunk = "" if args.chunk_seconds == 1.0 else f"_c{args.chunk_seconds:g}"
+    out_file = args.out / f"{stamp}_{args.model}_{args.compute_type}_b{args.beam_size}{chunk}.json"
     out_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"report: {out_file}")
     return 0

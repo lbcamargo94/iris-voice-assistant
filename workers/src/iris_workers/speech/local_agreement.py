@@ -62,9 +62,15 @@ class LocalAgreementStreamer:
         trim_seconds: float = 15.0,
         max_buffer_seconds: float = 30.0,
         prompt_chars: int = 200,
+        silence_keep_seconds: float = 3.0,
     ) -> None:
         if not 0 < trim_seconds <= max_buffer_seconds:
             raise ValueError("Require 0 < trim_seconds <= max_buffer_seconds")
+        if silence_keep_seconds <= 0:
+            raise ValueError("silence_keep_seconds must be positive")
+        self._silence_keep_seconds = silence_keep_seconds
+        self.silence_trimmed_seconds = 0.0
+        """Audio dropped because the model found no words in it (not counted as loss)."""
         self._transcribe = transcribe
         self._sample_rate = sample_rate
         self._trim_seconds = trim_seconds
@@ -74,8 +80,12 @@ class LocalAgreementStreamer:
         self._buffer_offset = 0.0
         self._committed: list[TimedWord] = []
         self._previous: list[TimedWord] = []
-        self.forced_trims = 0
-        """Buffer cuts made without a committed boundary (audio dropped uncommitted; ADR-009 metric)."""
+        self.forced_trim_ranges: list[tuple[float, float]] = []
+        """(start, end) of audio dropped without a committed boundary (ADR-009 visible-loss metric)."""
+
+    @property
+    def forced_trims(self) -> int:
+        return len(self.forced_trim_ranges)
 
     @property
     def committed(self) -> Sequence[TimedWord]:
@@ -96,6 +106,7 @@ class LocalAgreementStreamer:
             return StreamingUpdate()
         hypothesis = [w.shifted(self._buffer_offset) for w in self._transcribe(self._buffer, self._prompt())]
         hypothesis = self._drop_already_committed(hypothesis)
+        heard_nothing_new = not hypothesis
 
         newly_committed: list[TimedWord] = []
         while hypothesis and self._previous and hypothesis[0].key == self._previous[0].key:
@@ -104,8 +115,10 @@ class LocalAgreementStreamer:
         self._committed.extend(newly_committed)
         self._previous = hypothesis
 
-        self._trim()
-        return StreamingUpdate(committed=newly_committed, tentative=list(hypothesis))
+        if heard_nothing_new:
+            self._trim_silence()
+        newly_committed += self._trim()
+        return StreamingUpdate(committed=newly_committed, tentative=list(self._previous))
 
     def finish(self) -> StreamingUpdate:
         """End of stream: commits the remaining tentative words."""
@@ -135,9 +148,26 @@ class LocalAgreementStreamer:
                     return hypothesis[n:]
         return hypothesis
 
-    def _trim(self) -> None:
-        if self.buffer_seconds <= self._trim_seconds:
+    def _trim_silence(self) -> None:
+        """The pass heard no new words: drop old audio, keeping the last ``silence_keep_seconds``.
+
+        Whisper tends to classify a window dominated by silence as "no speech" and then misses
+        short utterances inside it; keeping silence out of the buffer avoids that (POC-001A finding).
+        Only acts after a pause of at least ``silence_keep_seconds`` since the last committed word,
+        so ordinary pauses keep their acoustic context.
+        """
+        buffer_end = self._buffer_offset + self.buffer_seconds
+        cut = buffer_end - self._silence_keep_seconds
+        if self._committed and self._committed[-1].end > cut:
             return
+        if cut > self._buffer_offset:
+            self.silence_trimmed_seconds += cut - self._buffer_offset
+            self._cut_at(cut)
+
+    def _trim(self) -> list[TimedWord]:
+        """Bounds the buffer. Returns tentative words force-committed by a cut without a boundary."""
+        if self.buffer_seconds <= self._trim_seconds:
+            return []
         inside = [w for w in self._committed if w.end > self._buffer_offset]
         sentence_ends = [w.end for w in inside if _SENTENCE_END.search(w.text.strip())]
         if sentence_ends:
@@ -146,10 +176,17 @@ class LocalAgreementStreamer:
             if inside:
                 self._cut_at(inside[-1].end)
             else:
-                # Nothing committed for a whole window (silence or unstable output): keep the most
-                # recent trim window and count the cut so it is visible in reports.
-                self.forced_trims += 1
-                self._cut_at(self._buffer_offset + self.buffer_seconds - self._trim_seconds)
+                # Nothing committed for a whole window (unstable output): keep the most recent trim
+                # window. Tentative words in the dropped audio are committed rather than silently
+                # lost (ADR-009), and the cut is recorded so it is visible in reports.
+                cut = self._buffer_offset + self.buffer_seconds - self._trim_seconds
+                self.forced_trim_ranges.append((self._buffer_offset, cut))
+                forced = [w for w in self._previous if w.end <= cut]
+                self._previous = [w for w in self._previous if w.end > cut]
+                self._committed.extend(forced)
+                self._cut_at(cut)
+                return forced
+        return []
 
     def _cut_at(self, time: float) -> None:
         samples = int(round((time - self._buffer_offset) * self._sample_rate))

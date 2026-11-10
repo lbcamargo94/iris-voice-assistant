@@ -126,15 +126,59 @@ def test_trims_buffer_after_committed_sentence_and_prompts_with_trimmed_text() -
     assert update.committed[0].start == pytest.approx(2.0)  # absolute time after the trim offset
 
 
-def test_forced_trim_is_counted_when_nothing_commits() -> None:
+def test_forced_trim_commits_dropped_tentative_words_instead_of_losing_them() -> None:
+    # Unstable output: each pass hears a different word at 0.0-0.5 s, so nothing ever agrees.
     transcriber = ScriptedTranscriber([[(0.0, 0.5, f" w{i}")] for i in range(5)])
     streamer = make(transcriber, trim_seconds=2.0, max_buffer_seconds=3.0)
+    forced: list[str] = []
+    for _ in range(4):
+        streamer.insert_audio(second())
+        forced += texts(streamer.process().committed)
+
+    assert streamer.forced_trims == 1
+    assert streamer.forced_trim_ranges == [(0.0, pytest.approx(2.0))]
+    assert forced == [" w3"]  # latest tentative word inside the dropped audio is kept
+    assert streamer.buffer_seconds <= 3.0
+
+
+def test_silence_is_trimmed_so_it_does_not_accumulate() -> None:
+    transcriber = ScriptedTranscriber([[]] * 6 + [[(0.5, 1.0, " hi")]])
+    streamer = make(transcriber, silence_keep_seconds=2.0)
+    for _ in range(7):
+        streamer.insert_audio(second())
+        update = streamer.process()
+
+    assert max(transcriber.buffer_seconds) <= 3.0
+    assert streamer.silence_trimmed_seconds == pytest.approx(4.0)
+    assert streamer.forced_trims == 0
+    assert update.tentative[0].start == pytest.approx(4.5)  # absolute time preserved
+
+
+def test_full_agreement_is_not_mistaken_for_silence() -> None:
+    hypothesis = [(0.0, 0.4, " a"), (0.5, 0.9, " b")]
+    transcriber = ScriptedTranscriber([hypothesis, hypothesis, hypothesis + [(3.0, 3.4, " c")]])
+    streamer = make(transcriber, silence_keep_seconds=0.5)
+    for _ in range(3):
+        streamer.insert_audio(second())
+        streamer.process()  # pass 2 commits everything, leaving no tentative words
+
+    assert streamer.silence_trimmed_seconds == 0.0
+    assert transcriber.buffer_seconds == [1.0, 2.0, 3.0]
+
+
+def test_silence_trim_waits_for_a_pause_after_the_last_committed_word() -> None:
+    word = [(0.0, 1.5, " long")]
+    transcriber = ScriptedTranscriber([word, word, [], [], []])  # "long" commits at pass 2
+    streamer = make(transcriber, silence_keep_seconds=2.0)
+    trimmed: list[float] = []
     for _ in range(5):
         streamer.insert_audio(second())
         streamer.process()
+        trimmed.append(streamer.silence_trimmed_seconds)
 
-    assert streamer.forced_trims >= 1
-    assert streamer.buffer_seconds <= 3.0
+    # Pause since the word end (1.5 s): 1.5 s at pass 3 (kept), 2.5 s at pass 4 (cut to 2.0 s).
+    assert trimmed == [0.0, 0.0, 0.0, pytest.approx(2.0), pytest.approx(3.0)]
+    assert streamer.buffer_seconds == pytest.approx(2.0)
 
 
 def test_rejects_non_float32_audio() -> None:

@@ -47,11 +47,37 @@ VRAM Δ = pico de VRAM do dispositivo menos a linha de base antes de carregar o 
 1. **Tempo real é viável em todas as configurações** (RTF streaming ≤ 0,40; um fluxo). Com dois fluxos (sistema + microfone) o custo aproximadamente dobra: ainda abaixo de 1, mas precisa ser medido no POC-001D.
 2. **Latência é dominada pela política, não pelo modelo.** 1ª exibição p50 ≈ 0,7–0,8 s atende à meta do RNF-015 (≤ 1,5 s), mas o **p95 (1,6–2,9 s) não atende**. Confirmação p50 ≈ 1,8 s / p95 ≈ 3–4 s. Próximas alavancas: blocos de 0,5 s, buffer menor, publicar parciais antes da confirmação.
 3. **Candidato provisório: large-v3-turbo int8_float16** — melhor WER offline, streaming equivalente aos demais, e a menor VRAM entre os modelos grandes (~1,5 GB), deixando espaço para tradução e LLM em 8 GB. Alternativa: distil-large-v3 float16. As diferenças de WER (±0,03) são pequenas para 2×300 s e **não são estatisticamente conclusivas**.
-4. **Cortes forçados (ES2004a: 4 em 300 s em todos os modelos)** indicam trechos de até 30 s sem nenhuma palavra confirmada (silêncio ou saída instável). Pela ADR-009 isso precisa ser explicado antes do POC-001D: investigar se o áudio cortado continha fala.
+4. **Cortes forçados (ES2004a: 4 em 300 s em todos os modelos)** indicavam trechos de até 30 s sem nenhuma palavra confirmada. Investigado e corrigido na política v2 (seção abaixo); a tabela acima é da política v1.
 5. A amostra de IS1009a inclui conversa antes do início anotado pelo AMI, o que penaliza o WER de todos igualmente.
+
+### Investigação dos cortes forçados → política v2 (2026-11-09)
+
+Rastreamento passo a passo em ES2004a (large-v3-turbo int8) mostrou duas falhas da política v1, não do modelo:
+
+1. **Silêncio acumulado esconde fala.** Após uma frase confirmada, o buffer seguiu crescendo com ~18 s de silêncio; com a janela dominada por silêncio, o Whisper classificou tudo como "sem fala" e omitiu "Is this going to fall off?" (50 s) até o corte forçado de 63 s — 14 s de atraso.
+2. **O corte forçado descartava palavras provisórias** sem registro, violando a ADR-009. Na v1: 4 cortes, 10 palavras da referência dentro de áudio descartado e nunca confirmadas (ex.: "What's missing").
+
+Correções em `local_agreement.py` (com testes):
+
+- **Corte de silêncio:** quando uma passada não ouve nenhuma palavra nova e já se passaram ≥ 3 s desde a última palavra confirmada, o áudio antigo é descartado (mantendo os últimos 3 s). Pausas comuns mantêm o contexto acústico. Contabilizado em `silence_trimmed_seconds` (não é perda: o modelo não ouviu palavras ali).
+- **Corte forçado sem perda:** palavras provisórias dentro do trecho descartado são confirmadas em vez de perdidas; o trecho fica em `forced_trim_ranges`.
+
+Resultados (large-v3-turbo int8_float16, beam 5; `results/stt-policy-v2/`):
+
+| Política | Bloco | WER IS1009a / ES2004a | 1ª exibição p50 / p95 (s) | Confirmação p50 / p95 (s) | RTF | Cortes forçados | Palavras perdidas |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| v1 | 1 s | 0.172 / 0.178 | 0.74–0.83 / 1.73–2.27 | 1.85–1.87 / 3.35–3.76 | 0.20–0.25 | 0 / 4 | 10 |
+| **v2** | 1 s | 0.185 / 0.176 | 0.80–0.82 / 1.70–1.81 | 1.89 / 3.11–4.04 | 0.18–0.24 | 0 / 0 | 0 |
+| v2 | 0,5 s | 0.216 / 0.207 | **0.54 / 1.16–1.47** | **1.08 / 2.06–2.74** | 0.35–0.44 | 0 / 0 | 0 |
+
+Leitura:
+
+- A v2 elimina a perda silenciosa sem custo relevante de WER (+0,013 em IS1009a, −0,002 em ES2004a).
+- **Blocos de 0,5 s atingem a meta de 1ª exibição do RNF-015 também no p95** (≤ 1,5 s) e reduzem a confirmação pela metade, ao custo de ~+0,03 de WER e do dobro de GPU (RTF ~0,4 por fluxo; ~0,8 estimado com dois fluxos — apertado). Decisão de produto: ver pendências.
 
 ### Pendências do passo 2
 
+- Escolher o bloco padrão (1 s × 0,5 s) e medir **dois fluxos simultâneos** antes de fixar.
+- Alternativa a avaliar: parciais a cada 0,5 s, mas confirmação só com hipóteses de ≥ 1 s de áudio novo (latência de exibição do 0,5 s com a precisão do 1 s).
 - Parakeet via sherpa-onnx (concorrente, ADR-008) ainda não medido.
 - Reuniões completas e mais reuniões AMI; normalização de números.
-- Investigar os cortes forçados; testar blocos de 0,5 s.
