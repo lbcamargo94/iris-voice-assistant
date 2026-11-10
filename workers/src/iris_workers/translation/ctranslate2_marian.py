@@ -17,6 +17,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from iris_workers.translation.glossary import TermProtector
+
 _SPACES = re.compile(r"\s+")
 _ZERO_WIDTH = dict.fromkeys(map(ord, "⁠​﻿"))
 
@@ -54,6 +56,10 @@ def build_source_tokens(pieces: Sequence[str], target_token: str | None) -> list
 class Translation:
     text: str
     seconds: float
+    protected_terms: int = 0
+    """Glossary terms kept in English in the output."""
+    glossary_fallbacks: int = 0
+    """Sentences retranslated without protection because the model lost a placeholder."""
 
 
 class MarianTranslator:
@@ -62,6 +68,7 @@ class MarianTranslator:
         model_dir: Path,
         source_spm: Path,
         *,
+        protector: TermProtector | None = None,
         target_token: str | None = None,
         device: str = "cuda",
         compute_type: str = "default",
@@ -76,15 +83,12 @@ class MarianTranslator:
             str(model_dir), device=device, compute_type=compute_type, intra_threads=intra_threads
         )
         self._source = sentencepiece.SentencePieceProcessor(model_file=str(source_spm))
+        self._protector = protector
         self._target_token = target_token
         self._beam_size = beam_size
         self._max_decoding_length = max_decoding_length
 
-    def translate(self, text: str) -> Translation:
-        start = time.perf_counter()
-        sentences = split_sentences(normalize_source(text))
-        if not sentences:
-            return Translation(text="", seconds=time.perf_counter() - start)
+    def _translate_batch(self, sentences: Sequence[str]) -> list[str]:
         batch = [
             build_source_tokens(self._source.encode(sentence, out_type=str), self._target_token)
             for sentence in sentences
@@ -92,5 +96,26 @@ class MarianTranslator:
         results = self._translator.translate_batch(
             batch, beam_size=self._beam_size, max_decoding_length=self._max_decoding_length
         )
-        output = " ".join(detokenize(r.hypotheses[0]) for r in results)
-        return Translation(text=output, seconds=time.perf_counter() - start)
+        return [detokenize(r.hypotheses[0]) for r in results]
+
+    def translate(self, text: str) -> Translation:
+        start = time.perf_counter()
+        sentences = split_sentences(normalize_source(text))
+        if not sentences:
+            return Translation(text="", seconds=time.perf_counter() - start)
+        if self._protector is None:
+            output = " ".join(self._translate_batch(sentences))
+            return Translation(text=output, seconds=time.perf_counter() - start)
+
+        protected = [self._protector.protect(sentence) for sentence in sentences]
+        outputs = self._translate_batch([p.text for p in protected])
+        restored = [TermProtector.restore(out, p.slots) for out, p in zip(outputs, protected)]
+        lost = [i for i, r in enumerate(restored) if r.missing]
+        final = [r.text for r in restored]
+        for i, retranslated in zip(lost, self._translate_batch([sentences[i] for i in lost]) if lost else []):
+            final[i] = retranslated
+        kept = sum(len(p.slots) for i, p in enumerate(protected) if i not in lost)
+        return Translation(
+            text=" ".join(final), seconds=time.perf_counter() - start,
+            protected_terms=kept, glossary_fallbacks=len(lost),
+        )

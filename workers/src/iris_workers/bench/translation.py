@@ -87,6 +87,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--beam-size", type=int, default=4)
     parser.add_argument("--intra-threads", type=int, default=0, help="CPU threads (0 = CTranslate2 default)")
     parser.add_argument("--rounds", type=int, default=3, help="passes over the reference set for latency")
+    parser.add_argument("--glossary", choices=["none", "default"], default="none",
+                        help="keep technical terms in English (translation.glossary.DEFAULT_TECH_TERMS)")
     parser.add_argument("--references", type=Path,
                         default=REPO_ROOT / "benchmarks" / "translation" / "reference-en-ptbr.md")
     parser.add_argument("--models-dir", type=Path, default=MODELS)
@@ -98,6 +100,7 @@ def main(argv: list[str] | None = None) -> int:
     import sentencepiece
 
     from iris_workers.translation.ctranslate2_marian import MarianTranslator
+    from iris_workers.translation.glossary import TermProtector
 
     paths = engine_paths(args.engine, args.models_dir)
     token = args.target_token
@@ -132,7 +135,8 @@ def main(argv: list[str] | None = None) -> int:
     with ResourceSampler() as sampler:
         t0 = time.perf_counter()
         translator = MarianTranslator(
-            paths["model_dir"], paths["source_spm"], target_token=token, device=args.device, compute_type=args.compute_type,
+            paths["model_dir"], paths["source_spm"], target_token=token,
+            protector=TermProtector() if args.glossary == "default" else None, device=args.device, compute_type=args.compute_type,
             beam_size=args.beam_size, intra_threads=args.intra_threads,
         )
         report["model_load_seconds"] = round(time.perf_counter() - t0, 2)
@@ -141,12 +145,15 @@ def main(argv: list[str] | None = None) -> int:
 
         latencies: list[float] = []
         outputs: list[str] = []
+        protected_terms = glossary_fallbacks = 0
         for round_index in range(args.rounds):
             for sentence in references:
                 result = translator.translate(sentence.source)
                 latencies.append(result.seconds)
                 if round_index == 0:
                     outputs.append(result.text)
+                    protected_terms += result.protected_terms
+                    glossary_fallbacks += result.glossary_fallbacks
 
     by_category: dict[str, list[int]] = defaultdict(list)
     for i, sentence in enumerate(references):
@@ -167,6 +174,8 @@ def main(argv: list[str] | None = None) -> int:
         "source_chars_mean": round(sum(len(r.source) for r in references) / len(references), 1),
         "pt_pt_sentences": sum(1 for found in markers if found),
         "pt_pt_markers": dict(sorted(marker_counts.items())),
+        "glossary_protected_terms": protected_terms,
+        "glossary_fallback_sentences": glossary_fallbacks,
     }
     report["resources"] = asdict(sampler.summary())
     report["translations"] = [
@@ -178,13 +187,17 @@ def main(argv: list[str] | None = None) -> int:
     args.out.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     token_tag = effective_token.strip("<>") if effective_token.startswith(">>") else "default"
-    out_file = args.out / f"{stamp}_{args.engine}_{token_tag}_{args.device}_{args.compute_type}_b{args.beam_size}.json"
+    suffix = "_glossary" if args.glossary != "none" else ""
+    out_file = args.out / (
+        f"{stamp}_{args.engine}_{token_tag}_{args.device}_{args.compute_type}_b{args.beam_size}{suffix}.json"
+    )
     out_file.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     res = report["results"]
     print(
         f"{args.engine} {effective_token} {args.device}/{args.compute_type} b{args.beam_size}: chrF={res['chrf']} "
         f"latency p50/p95={res['latency_ms']['p50']}/{res['latency_ms']['p95']} ms "
-        f"PT-PT sentences={res['pt_pt_sentences']} {res['pt_pt_markers']}",
+        f"PT-PT sentences={res['pt_pt_sentences']} {res['pt_pt_markers']} "
+        f"glossary kept={protected_terms} fallbacks={glossary_fallbacks}",
         flush=True,
     )
     print(f"report: {out_file}")

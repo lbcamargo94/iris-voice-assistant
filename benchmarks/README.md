@@ -148,8 +148,43 @@ Os modelos carregam em 0,2 a 1 s. A VRAM é medida no dispositivo inteiro: é o 
 
    As expressões idiomáticas também falham: "take this offline" → tirar do ar, "you broke up" → você terminou, "final call" → última chamada. Isso justifica o glossário de termos que não devem ser traduzidos e o refinamento opcional por LLM do ADR-010. O LLM é o passo 4.
 
+### Termos técnicos mantidos em inglês (glossário, 2026-11-10)
+
+O usuário decidiu que os termos técnicos ficam em inglês. Para escolher como protegê-los, testei 8 formas de placeholder em 7 termos com o Opus-MT `>>pob<<`:
+
+| Forma | Termos preservados |
+| --- | --- |
+| Termo original, sem placeholder | 0/7 |
+| Entre aspas | 2/7 (traduziu "pedido de retirada" e "bandeira de recurso") |
+| `__0__` | 2/7 |
+| `[0]` | 6/7 |
+| `X0`, `TERM0`, `ZQX0` ou um nome inventado | 7/7 |
+
+O escolhido foi `ZQX0`, por ser improvável num texto real. O modelo trata o placeholder como substantivo masculino, por isso o glossário guarda o gênero do termo e corrige o artigo ("uma feature flag").
+
+```powershell
+uv run --group bench python -m iris_workers.bench.translation --engine opus --glossary default
+```
+
+**Resultado:**
+
+- O chrF subiu de **68,6 para 72,8**.
+- 13 termos foram preservados e nenhuma frase precisou de fallback.
+- 10 das 50 frases mudaram, e todas melhoraram. Exemplos: bug (antes "inseto"), build ("construção"), pull request ("pedido"), merge ("fusão"), dead letter queue ("fila de cartas morta"), endpoint ("ponto final"), feature flag ("bandeira"), ticket ("bilhete"), "desta sprint".
+- O custo de proteger e restaurar é de **33 µs por frase**.
+- **Latência:** remedida com a máquina ociosa e uma rodada de controle sem glossário logo antes:
+
+  | Configuração | Sem glossário (p50 / p95) | Com glossário (p50 / p95) |
+  | --- | --- | --- |
+  | GPU int8_float16 | 60 / 87 ms | 63 / 84 ms |
+  | CPU int8 | — | 164 / 209 ms |
+
+  A diferença fica dentro do ruído. A primeira tentativa foi descartada porque um jogo usava 67% da GPU. Naquela condição, a tradução sem glossário também subiu para cerca de 234 ms por frase: outro uso da GPU afeta a tradução, assim como afeta o STT.
+- **Glossário padrão ativo** no motor rápido (ADR-010, refinamento, item 5).
+
 ### Pendências do passo 3
 
 - Revisar as referências na prática e aceitar alternativas na pontuação, com múltiplas referências.
-- Glossário e proteção de termos técnicos, e normalizador PT-PT→PT-BR (ADR-010, itens 3 e 4). Nesta medição, com `>>pob<<`, nenhum marcador apareceu.
+- Normalizador PT-PT→PT-BR (ADR-010, item 4). Nesta medição, com `>>pob<<`, nenhum marcador apareceu.
+- "flaky test" ainda sai como "teste escamoso". Avaliar se o termo entra na lista padrão ou fica para o refinamento por LLM.
 - Traduzir orações confirmadas vindas do STT real (AMI), não só frases escritas.
