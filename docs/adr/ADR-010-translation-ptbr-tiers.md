@@ -20,7 +20,7 @@ O produto exige português **brasileiro**. O pacote Argos en→pt não garante a
 1. **Token `>>pob<<` confirmado.** Com `>>por<<`, os dois motores produzem PT-PT (ficheiro, equipa, utilizador, "estar a + infinitivo"). Com `>>pob<<` não houve nenhum marcador nas 50 frases.
 2. **Motor rápido: Opus-MT tc-big com `>>pob<<` e beam 4.** O chrF foi 68,6, contra 66,2 do Argos com `>>pob<<`, e o Argos omitiu trechos das frases. O Argos fica descartado como motor, mas pode servir de baseline.
 3. **O adaptador separa as frases antes de traduzir.** Modelos Marian descartam o texto depois da primeira frase de uma entrada.
-4. **Latência:** 45 a 76 ms por frase na GPU e 151 a 207 ms na CPU int8 (4 threads). A escolha entre CPU e GPU sai da medição combinada do passo 6. A CPU deixa a GPU livre para o STT.
+4. **Latência:** 45 a 76 ms por frase na GPU e 151 a 207 ms na CPU int8 (4 threads). **Decisão do passo 6 (2026-11-11): CPU int8 com 4 threads.** Na medição combinada, a GPU não reduziu a latência e acrescentou ~0,3 GB de VRAM. A tradução custa ~0,1 s e nunca esperou na fila; o que domina a latência é a confirmação do STT.
 5. **Termos técnicos mantidos em inglês já na camada rápida** (aprovado pelo usuário em 2026-11-10). Sem isso, termos comuns (build, merge, pull request, feature flag, endpoint, ticket) saíam traduzidos ao pé da letra. Como funciona (`translation/glossary.py`):
    - Cada termo do glossário vira um placeholder opaco (`ZQX0`), que o Opus-MT copia sem alterar. O termo original entra de volta depois da tradução.
    - O determinante antes do termo é corrigido conforme o gênero cadastrado ("uma feature flag", "da sprint").

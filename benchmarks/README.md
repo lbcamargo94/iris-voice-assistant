@@ -369,3 +369,61 @@ As entradas de 3 frases geraram a mesma duração de áudio que a soma das frase
 - Teste de realimentação: a voz da Iris não pode voltar ao STT. Isso fica para a captura (POC-001B, ADR-007).
 - Medir a carga a partir de SSD e a contenção de CPU com o pipeline completo (passo 6).
 - V1: voz própria da Iris gerada a partir de uma gravação de referência com direitos de uso, por exemplo com o Chatterbox Multilingual (MIT). Exige VRAM.
+
+## Medição combinada (passo 6) — tudo rodando junto
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start-ollama.ps1   # em outro terminal
+cd workers; uv run --group bench python -m iris_workers.bench.combined     # padrão: tradução CPU 4 threads, LLM, voz da Iris
+```
+
+**Método.**
+
+- O áudio entra **em tempo real**: cada bloco só é processado depois que o áudio dele "chegou". Assim, todos os componentes disputam GPU e CPU como numa reunião de verdade (o benchmark do passo 2 usava um relógio simulado).
+- **STT:** duas reuniões AMI ao mesmo tempo (IS1009a como áudio do sistema e ES2004a como microfone, 300 s cada), num só large-v3-turbo int8_float16, com a cadência híbrida padrão do ADR-008.
+- **Tradução:** as palavras confirmadas do **sistema** viram frases (`speech/sentences.py`), que são traduzidas pelo Opus-MT com glossário. A tradução do microfone fica desligada por padrão (ADR-011).
+- **LLM:** cada tradução é refinada e passa pela verificação de fatos; as perguntas também são classificadas. Usa qwen3:4b-instruct no Ollama, com fila limitada a 4; se a fila enche, o refinamento é pulado e contado.
+- **Voz:** a cada 30 s, a última tradução é lida pela voz da Iris, simulando alguém clicando em "Ouvir".
+- As latências são medidas a partir do fim da última palavra falada. Os modelos são carregados e aquecidos antes do relógio começar, como o app faria no início da reunião.
+- A VRAM é a do dispositivo inteiro, e a linha de base (desktop) é medida com o LLM descarregado.
+- O relatório tem só métricas (`results/combined/`).
+
+### Resultados — 2026-11-11, RTX 4060 Ti 8 GB, Ryzen 7 5800X3D, GPU e CPU livres
+
+| Configuração | Exibição sistema p50 / p95 | Exibição mic p50 / p95 | Confirmação sistema p50 / p95 | Tradução desde a fala p50 / p95 / máx | Refino desde a fala p50 / p95 | Voz: 1º áudio p50 / máx | VRAM pico | CPU da máquina p95 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Base: STT + tradução CPU | 0,58 / 1,43 s | 0,98 / 2,33 s | 1,90 / 3,13 s | 1,85 / 4,17 / 4,92 s | — | — | 3,9 GB | 42% |
+| + voz | 0,63 / 1,51 s | 1,12 / 2,58 s | 1,94 / 3,16 s | 1,92 / 4,35 / 4,94 s | — | 0,67 / 1,32 s | 3,8 GB | 71% |
+| **+ voz + LLM (padrão)**, rodada 1 | 0,68 / 1,60 s | 1,15 / 2,71 s | 1,98 / 3,13 s | 1,96 / 4,28 / 4,98 s | 2,26 / 4,63 s | 0,64 / 1,39 s | 6,8 GB | 85% |
+| **+ voz + LLM (padrão)**, rodada 2 | 0,65 / 1,58 s | 1,10 / 2,77 s | 1,94 / 3,17 s | 1,94 / 4,20 / 4,93 s | 2,19 / 4,30 s | 0,66 / 1,25 s | 6,7 GB | 41% |
+| Tradução na GPU | 0,71 / 1,65 s | 1,20 / 2,70 s | 1,98 / 3,44 s | 1,92 / 4,14 / 4,93 s | 2,17 / 4,36 s | 0,59 / 1,42 s | 7,1 GB | 88% |
+| Voz com 4 threads | 0,71 / 1,73 s | 1,20 / 2,23 s | 2,01 / 3,25 s | 2,01 / 4,22 / 4,94 s | 2,30 / 4,34 s | 0,83 / 1,77 s | 6,8 GB | 74% |
+
+Em todas as rodadas:
+- 78 de 78 frases foram traduzidas, nenhuma por corte forçado;
+- zero cortes forçados no STT e zero erros;
+- nenhum refinamento foi pulado, e 7 de 78 foram rejeitados pela verificação de fatos;
+- 5 perguntas foram classificadas;
+- a desktop sozinha usa 2,2 a 2,4 GB de VRAM.
+
+A tradução em si leva 0,1 s no p50 e 0,2 a 0,3 s no p95, e nunca esperou na fila (espera máxima de 0,12 s). A diferença entre as duas rodadas iguais dá o ruído: ~0,1 s nas latências. O pico de CPU da máquina oscila com a desktop.
+
+### Conclusões
+
+1. **Tudo cabe nos 8 GB:** o pico de VRAM é de **6,7 a 6,8 GB** com STT, tradução na CPU, LLM e voz, deixando ~1,2 GB de folga. A estimativa anterior (~7,5 GB) era pessimista. Tradução na GPU levaria o pico a 7,1 GB sem ganho.
+2. **Configuração padrão escolhida:**
+   - tradução na **CPU** com 4 threads: na GPU não houve ganho (ADR-010, item 4);
+   - voz da Iris na **CPU com as threads padrão**: limitar a 4 threads leva o primeiro áudio a 1,77 s, acima da meta, sem melhorar o STT (ADR-011, item 5);
+   - LLM na GPU.
+3. **Voz:** o primeiro áudio fica abaixo de 1,5 s em todas as rodadas com as threads padrão (máximo de 1,25 a 1,42 s), mesmo com o pipeline inteiro rodando.
+4. **Duas metas do RNF-015 não são cumpridas, já na linha de base, e por causa do STT:**
+   - **Tradução ≤ 4 s no p95:** medimos 4,2 a 4,35 s. Quase todo esse tempo é a confirmação do STT (p95 de ~3,1 s), somada à espera pela última palavra da frase. A tradução custa ~0,1 s.
+   - **Exibição ≤ 1,5 s no p95:** o sistema fica em 1,43 s na base e 1,58 a 1,60 s com tudo ligado. O microfone fica em 2,3 a 2,8 s, porque ele é processado depois do sistema em cada ciclo e tem mais passadas de exibição puladas (140 a 198 de ~600).
+   - Voz e LLM somam só ~0,1 a 0,2 s nessas latências. O caminho para cumprir as metas está na **política do STT**, que é assunto do POC-001D (pendências abaixo).
+
+### Pendências do passo 6
+
+Todas são da política de STT e devem ser tratadas no POC-001D:
+- Confirmar mais cedo o fim de frase: quando o VAD detectar silêncio depois de pontuação final, confirmar a cauda provisória sem esperar a próxima concordância.
+- Dar prioridade ao sistema em relação ao microfone (ADR-009, RNF-017): por exemplo, exibição do microfone a cada 1 s.
+- Repetir a medição em reuniões mais longas e no teste de 60 minutos (POC-001F).

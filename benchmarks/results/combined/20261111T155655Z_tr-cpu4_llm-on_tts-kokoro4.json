@@ -1,0 +1,182 @@
+{
+  "benchmark": "combined",
+  "created_utc": "2026-11-11T15:56:55+00:00",
+  "environment": {
+    "python_version": "3.12.16",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "machine": "AMD64",
+    "processor": "AMD64 Family 25 Model 33 Stepping 2, AuthenticAMD",
+    "gpus": [
+      {
+        "name": "NVIDIA GeForce RTX 4060 Ti",
+        "memory_total_mib": 8188,
+        "driver_version": "616.92"
+      }
+    ]
+  },
+  "versions": {
+    "ctranslate2": "4.8.5",
+    "ollama": "0.40.16"
+  },
+  "config": {
+    "stt_model": "large-v3-turbo",
+    "stt_compute_type": "int8_float16",
+    "meetings": [
+      "IS1009a",
+      "ES2004a"
+    ],
+    "max_seconds": 300.0,
+    "translation_device": "cpu",
+    "translation_threads": 4,
+    "llm_model": "qwen3:4b-instruct",
+    "llm_queue": 4,
+    "tts": "kokoro",
+    "tts_threads": 4,
+    "tts_interval": 30.0
+  },
+  "stt_model": {
+    "name": "large-v3-turbo",
+    "repo": "mobiuslabsgmbh/faster-whisper-large-v3-turbo",
+    "revision": "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf",
+    "model_bin_sha256": "e76620f83d5f5b69efd3d87e3dc180c1bd21df9fbebacfd4335e5e1efcc018da"
+  },
+  "load_seconds": {
+    "stt_seconds": 15.02,
+    "translation_seconds": 3.95,
+    "llm_seconds": 2.82,
+    "tts_seconds": 5.27
+  },
+  "wall_seconds": 300.9,
+  "stt": [
+    {
+      "meeting": "IS1009a",
+      "role": "system",
+      "committed_words": 465,
+      "first_display_latency_seconds": {
+        "count": 465,
+        "p50": 0.71,
+        "p95": 1.73,
+        "p99": 3.092,
+        "max": 3.64
+      },
+      "commit_latency_seconds": {
+        "count": 465,
+        "p50": 2.008,
+        "p95": 3.251,
+        "p99": 4.598,
+        "max": 5.023
+      },
+      "lag_seconds_max": 1.413,
+      "skipped_display_passes": 76,
+      "forced_trims": 0
+    },
+    {
+      "meeting": "ES2004a",
+      "role": "microphone",
+      "committed_words": 350,
+      "first_display_latency_seconds": {
+        "count": 350,
+        "p50": 1.195,
+        "p95": 2.229,
+        "p99": 3.146,
+        "max": 3.763
+      },
+      "commit_latency_seconds": {
+        "count": 350,
+        "p50": 2.327,
+        "p95": 4.204,
+        "p99": 7.486,
+        "max": 8.306
+      },
+      "lag_seconds_max": 1.744,
+      "skipped_display_passes": 198,
+      "forced_trims": 0
+    }
+  ],
+  "counts": {
+    "sentences": 78,
+    "forced_sentences": 0,
+    "translations": 78,
+    "llm_skipped": 0,
+    "refined": 78,
+    "guard_rejected": 7,
+    "classified": 5,
+    "classify_invalid": 0,
+    "tts_requests": 10,
+    "errors": 0
+  },
+  "translation_from_speech_seconds": {
+    "count": 78,
+    "p50": 2.012,
+    "p95": 4.222,
+    "p99": 4.941,
+    "max": 4.941
+  },
+  "translation_queue_wait_seconds": {
+    "count": 78,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.077,
+    "max": 0.077
+  },
+  "translation_compute_seconds": {
+    "count": 78,
+    "p50": 0.106,
+    "p95": 0.284,
+    "p99": 0.396,
+    "max": 0.396
+  },
+  "refine_from_speech_seconds": {
+    "count": 78,
+    "p50": 2.304,
+    "p95": 4.336,
+    "p99": 5.054,
+    "max": 5.054
+  },
+  "refine_compute_seconds": {
+    "count": 78,
+    "p50": 0.27,
+    "p95": 0.749,
+    "p99": 0.97,
+    "max": 0.97
+  },
+  "classify_compute_seconds": {
+    "count": 5,
+    "p50": 1.312,
+    "p95": 1.753,
+    "p99": 1.753,
+    "max": 1.753
+  },
+  "tts_first_audio_seconds": {
+    "count": 10,
+    "p50": 0.825,
+    "p95": 1.77,
+    "p99": 1.77,
+    "max": 1.77
+  },
+  "tts_last_audio_seconds": {
+    "count": 10,
+    "p50": 0.825,
+    "p95": 1.77,
+    "p99": 1.77,
+    "max": 1.77
+  },
+  "resources": {
+    "cpu_percent_avg": 6.3,
+    "cpu_percent_max": 26.0,
+    "rss_mib_max": 1273.2,
+    "vram_used_mib_baseline": 6261.8,
+    "vram_used_mib_max": 6792.0,
+    "samples": 588,
+    "vram_used_mib_before_load": 2383.8,
+    "system_cpu_percent": {
+      "count": 588,
+      "p50": 32.5,
+      "p95": 73.6,
+      "p99": 95.2,
+      "max": 98.7
+    },
+    "llm_vram_mib": 2743
+  },
+  "resources_note": "VRAM is device-wide; system CPU covers all processes (Ollama, Kokoro, desktop)."
+}

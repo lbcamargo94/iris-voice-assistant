@@ -1,0 +1,180 @@
+{
+  "benchmark": "combined",
+  "created_utc": "2026-11-11T15:39:37+00:00",
+  "environment": {
+    "python_version": "3.12.16",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "machine": "AMD64",
+    "processor": "AMD64 Family 25 Model 33 Stepping 2, AuthenticAMD",
+    "gpus": [
+      {
+        "name": "NVIDIA GeForce RTX 4060 Ti",
+        "memory_total_mib": 8188,
+        "driver_version": "616.92"
+      }
+    ]
+  },
+  "versions": {
+    "ctranslate2": "4.8.5",
+    "ollama": null
+  },
+  "config": {
+    "stt_model": "large-v3-turbo",
+    "stt_compute_type": "int8_float16",
+    "meetings": [
+      "IS1009a",
+      "ES2004a"
+    ],
+    "max_seconds": 300.0,
+    "translation_device": "cpu",
+    "translation_threads": 4,
+    "llm_model": "none",
+    "llm_queue": 4,
+    "tts": "none",
+    "tts_threads": 0,
+    "tts_interval": 30.0
+  },
+  "stt_model": {
+    "name": "large-v3-turbo",
+    "repo": "mobiuslabsgmbh/faster-whisper-large-v3-turbo",
+    "revision": "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf",
+    "model_bin_sha256": "e76620f83d5f5b69efd3d87e3dc180c1bd21df9fbebacfd4335e5e1efcc018da"
+  },
+  "load_seconds": {
+    "stt_seconds": 15.08,
+    "translation_seconds": 3.89
+  },
+  "wall_seconds": 300.3,
+  "stt": [
+    {
+      "meeting": "IS1009a",
+      "role": "system",
+      "committed_words": 465,
+      "first_display_latency_seconds": {
+        "count": 465,
+        "p50": 0.575,
+        "p95": 1.428,
+        "p99": 3.208,
+        "max": 3.617
+      },
+      "commit_latency_seconds": {
+        "count": 465,
+        "p50": 1.904,
+        "p95": 3.127,
+        "p99": 4.628,
+        "max": 5.01
+      },
+      "lag_seconds_max": 2.423,
+      "skipped_display_passes": 14,
+      "forced_trims": 0
+    },
+    {
+      "meeting": "ES2004a",
+      "role": "microphone",
+      "committed_words": 350,
+      "first_display_latency_seconds": {
+        "count": 350,
+        "p50": 0.98,
+        "p95": 2.33,
+        "p99": 3.23,
+        "max": 3.37
+      },
+      "commit_latency_seconds": {
+        "count": 350,
+        "p50": 2.192,
+        "p95": 4.387,
+        "p99": 7.451,
+        "max": 8.271
+      },
+      "lag_seconds_max": 2.677,
+      "skipped_display_passes": 157,
+      "forced_trims": 0
+    }
+  ],
+  "counts": {
+    "sentences": 78,
+    "forced_sentences": 0,
+    "translations": 78,
+    "llm_skipped": 0,
+    "refined": 0,
+    "guard_rejected": 0,
+    "classified": 0,
+    "classify_invalid": 0,
+    "tts_requests": 0,
+    "errors": 0
+  },
+  "translation_from_speech_seconds": {
+    "count": 78,
+    "p50": 1.847,
+    "p95": 4.173,
+    "p99": 4.921,
+    "max": 4.921
+  },
+  "translation_queue_wait_seconds": {
+    "count": 78,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.071,
+    "max": 0.071
+  },
+  "translation_compute_seconds": {
+    "count": 78,
+    "p50": 0.086,
+    "p95": 0.213,
+    "p99": 0.358,
+    "max": 0.358
+  },
+  "refine_from_speech_seconds": {
+    "count": 0,
+    "p50": null,
+    "p95": null,
+    "p99": null,
+    "max": null
+  },
+  "refine_compute_seconds": {
+    "count": 0,
+    "p50": null,
+    "p95": null,
+    "p99": null,
+    "max": null
+  },
+  "classify_compute_seconds": {
+    "count": 0,
+    "p50": null,
+    "p95": null,
+    "p99": null,
+    "max": null
+  },
+  "tts_first_audio_seconds": {
+    "count": 0,
+    "p50": null,
+    "p95": null,
+    "p99": null,
+    "max": null
+  },
+  "tts_last_audio_seconds": {
+    "count": 0,
+    "p50": null,
+    "p95": null,
+    "p99": null,
+    "max": null
+  },
+  "resources": {
+    "cpu_percent_avg": 6.1,
+    "cpu_percent_max": 32.9,
+    "rss_mib_max": 1272.4,
+    "vram_used_mib_baseline": 3336.3,
+    "vram_used_mib_max": 3901.1,
+    "samples": 588,
+    "vram_used_mib_before_load": 2235.5,
+    "system_cpu_percent": {
+      "count": 588,
+      "p50": 21.0,
+      "p95": 42.0,
+      "p99": 48.3,
+      "max": 79.5
+    },
+    "llm_vram_mib": null
+  },
+  "resources_note": "VRAM is device-wide; system CPU covers all processes (Ollama, Kokoro, desktop)."
+}

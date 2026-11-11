@@ -31,15 +31,20 @@ Essas são escolhas candidatas, não certificação de qualidade ou licença. Re
 
 faster-whisper/CTranslate2 usam CUDA 12 e cuDNN 9. As bibliotecas necessárias são instaladas por pip no ambiente isolado (`nvidia-cublas-cu12`, `nvidia-cudnn-cu12`), sem instalação global do CUDA Toolkit. Exige driver NVIDIA compatível. Fixar versões após o benchmark.
 
-## Orçamento de recursos (hipótese a validar)
+## Orçamento de recursos (medido no passo 6, 2026-11-11)
 
-| Componente | VRAM estimada |
-| --- | --- |
-| STT (uma instância compartilhada pelos dois fluxos) | ~1,5 GB |
-| Tradução rápida | ~0,5 GB (ou CPU) |
-| LLM 3–4B Q4 | ~3 GB |
+Medido na RTX 4060 Ti 8 GB com tudo rodando junto (`benchmarks/README.md`, "Medição combinada"):
 
-Total esperado abaixo de 8 GB; medir isolado e combinado na RTX 4060 Ti 8 GB de desenvolvimento.
+| Componente | Onde | VRAM |
+| --- | --- | --- |
+| Desktop (Windows + apps abertos) | — | 2,2–2,4 GB |
+| STT large-v3-turbo int8_float16 (uma instância para os dois fluxos) | GPU | ~1,1 GB carregado, ~1,5 GB no pico |
+| Tradução rápida Opus-MT int8 (4 threads) | CPU | 0 (na GPU seriam ~0,3 GB) |
+| LLM qwen3:4b-instruct Q4_K_M | GPU | 2,7 GB |
+| Voz da Iris (Kokoro, threads padrão) | CPU | 0 (~650 MiB de RAM) |
+| **Pico total do dispositivo** | | **6,7–6,8 GB** |
+
+A folga é de ~1,2 GB. Com STT e tradução apenas, o pico é de 3,9 GB.
 
 ## Privacidade
 

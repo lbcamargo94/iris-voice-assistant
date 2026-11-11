@@ -32,6 +32,7 @@ A proposta original previa reprodução contínua da tradução em voz. Isso sob
    - Voz "Maria" do Windows (SAPI): recusada por soar robótica.
    - Vozes de serviços de nuvem e cópia de vozes comerciais de terceiros: excluídas por privacidade (ADR-002) e por direitos de terceiros.
 5. **Pendências:**
-   - CPU ou GPU e número de threads: decisão do passo 6, com a contenção medida.
+   - CPU ou GPU e número de threads: resolvido no item 6.
    - Teste de realimentação: POC-001B.
    - V1: voz própria gerada a partir de uma gravação de referência com direitos de uso.
+6. **Decisão do passo 6 (2026-11-11): Kokoro na CPU com as threads padrão do onnxruntime.** Com STT, tradução e LLM rodando juntos, o primeiro áudio ficou com máximo de 1,25 a 1,42 s, dentro da meta. Com 4 threads chegou a 1,77 s, sem melhorar o STT.
