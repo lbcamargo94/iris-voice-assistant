@@ -1,0 +1,34 @@
+{
+  "description": "POC-001A step 4: local LLMs served by the portable Ollama (scripts/fetch-ollama.ps1, scripts/start-ollama.ps1). Ollama tags can be re-pointed upstream, so the manifest digest is what was measured: scripts/start-ollama.ps1 -Pull and the benchmarks refuse a model whose digest differs.",
+  "runtime": {"name": "ollama", "version": "v0.40.16", "license": "MIT", "registry": "registry.ollama.ai"},
+  "selected": "qwen3:4b-instruct",
+  "models": [
+    {
+      "name": "qwen3:4b-instruct",
+      "digest": "0edcdef34593eac1aa2be9c7d06c432dcf81945adca5eca2f27662c18f168ba0",
+      "family": "qwen3",
+      "parameterSize": "4.0B",
+      "quantization": "Q4_K_M",
+      "sizeGB": 2.5,
+      "license": "Apache-2.0 (Alibaba Qwen)",
+      "tasks": ["translation-refinement", "directed-question-classification"],
+      "measuredVramMiB": 2743,
+      "contextLength": 2048
+    },
+    {
+      "name": "phi4-mini:3.8b",
+      "digest": "78fad5d182a7c33065e153a5f8ba210754207ba9d91973f57dffa7f487363753",
+      "family": "phi3",
+      "parameterSize": "3.8B",
+      "quantization": "Q4_K_M",
+      "sizeGB": 2.5,
+      "license": "MIT (Microsoft)",
+      "tasks": ["comparison only"],
+      "status": "compared, not selected"
+    }
+  ],
+  "excludedByLicense": [
+    {"family": "gemma3", "reason": "Gemma Terms of Use (use restrictions)"},
+    {"family": "llama3.2", "reason": "Llama 3.2 Community License (use restrictions, mandatory attribution)"}
+  ]
+}

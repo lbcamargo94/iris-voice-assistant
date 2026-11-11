@@ -45,46 +45,57 @@ A licença do runtime não determina automaticamente a licença dos pesos ou dos
 
 ## Inventário em uso (POC-001A)
 
-Revisado em 2026-11-09 a partir dos metadados publicados (PyPI, Hugging Face, página do corpus). Revisão técnica, não jurídica. Os SHA-256 dos modelos ficam registrados em cada relatório em `benchmarks/results/`.
+Revisado em 2026-11-11 (passo 7), a partir dos metadados publicados: PyPI, Hugging Face, GitHub, registro do Ollama e página do corpus. É uma revisão técnica, não jurídica.
 
-### Dependências Python
+**Checksums e revisões ficam nos manifestos** (`benchmarks/models/*.manifest.json` e `benchmarks/corpus/ami.manifest.json`), e os scripts e benchmarks recusam artefatos que não batem:
 
-| Pacote | Versão (uv.lock) | Grupo | Função | Licença | Observação |
+| Família | Manifesto | Como é verificado |
+| --- | --- | --- |
+| STT (faster-whisper) | `whisper.manifest.json` | Download só da revisão fixada; SHA-256 do `model.bin` conferido antes de carregar (`bench/stt.py`). Modelo fora do manifesto não é baixado |
+| Tradução (Opus-MT, Argos) | `translation.manifest.json` | SHA-256 do arquivo baixado e do `model.bin` convertido (`fetch-translation-models.ps1`) |
+| LLM (Ollama) | `llm.manifest.json` | Digest de cada modelo conferido depois do pull (`scripts/verify-ollama-models.ps1`) e antes de cada benchmark |
+| Runtime Ollama | `scripts/fetch-ollama.ps1` | SHA-256 do release e assinatura Authenticode da Ollama Inc. |
+| Voz da Iris (Kokoro) | `kokoro.manifest.json` | SHA-256 do modelo e das vozes. O valor foi registrado no primeiro download, porque o release não publica checksum |
+| Piper e vozes (comparação) | `tts.manifest.json` | Revisão do Hugging Face fixada e SHA-256 de cada arquivo |
+| Ambientes Python separados (Piper, Kokoro) | `benchmarks/tts/*-requirements.txt` | `uv pip sync --require-hashes` |
+| Workers | `workers/uv.lock` | `uv sync --locked` (também no CI) |
+
+O teste `workers/tests/test_manifests.py` confere o formato de todos os checksums, revisões e URLs (HTTPS).
+
+### Dependências Python (workers, `uv.lock`)
+
+| Pacote | Versão | Grupo | Função | Licença | Observação |
 | --- | --- | --- | --- | --- | --- |
-| numpy | 2.x | runtime | Buffers de áudio | BSD-3-Clause | Mantido ativamente |
+| numpy | 2.5.4 | runtime | Buffers de áudio | BSD-3-Clause | Mantido ativamente |
 | faster-whisper | 1.2.1 | bench | STT | MIT | Mantido pela SYSTRAN |
 | ctranslate2 | 4.8.5 | bench (dep.) | Inferência Whisper/Opus-MT | MIT | Wheel Windows inclui libiomp5 (Intel, redistribuível) |
-| nvidia-cublas-cu12 / nvidia-cudnn-cu12 / nvidia-cuda-nvrtc-cu12 | 12.9 / 9.28 / 12.9 | bench | DLLs CUDA para CTranslate2 sem CUDA Toolkit global | NVIDIA EULA (redistribuição permitida sob os termos) | ~1,3 GB; revisar termos antes de empacotar |
-| av, onnxruntime, tokenizers, huggingface-hub | ver uv.lock | bench (dep. de faster-whisper) | Decodificação, VAD Silero, tokenização, download | BSD/LGPL (av usa FFmpeg LGPL), MIT, Apache-2.0, Apache-2.0 | `av` não é usado: o áudio entra como array |
-| psutil | 7.x | bench | Amostragem de CPU/RAM | BSD-3-Clause | |
-| nvidia-ml-py | 13.x | bench | Amostragem de VRAM (NVML) | BSD-3-Clause | |
+| nvidia-cublas-cu12 / nvidia-cudnn-cu12 / nvidia-cuda-nvrtc-cu12 | 12.9.2.10 / 9.28.1.4 / 12.9.86 | bench | DLLs CUDA para CTranslate2 sem CUDA Toolkit global | NVIDIA EULA (redistribuição permitida sob os termos) | ~1,3 GB; revisar termos antes de empacotar |
+| av / onnxruntime / tokenizers / huggingface-hub | 19.0.2 / 1.31.1 / 0.23.3 / 2.4.0 | bench (dep. de faster-whisper) | Decodificação, VAD Silero, tokenização, download | BSD/LGPL (av usa FFmpeg LGPL), MIT, Apache-2.0, Apache-2.0 | `av` não é usado: o áudio entra como array |
+| psutil | 7.2.2 | bench | Amostragem de CPU/RAM | BSD-3-Clause | |
+| nvidia-ml-py | 13.615.71 | bench | Amostragem de VRAM (NVML) | BSD-3-Clause | |
 | sentencepiece | 0.2.3 | bench | Tokenização Opus-MT/Argos | Apache-2.0 | Mantido pelo Google; wheel de ~1,6 MB. O pacote `argostranslate` **não** é usado, porque puxaria stanza (PyTorch) e spaCy |
 
 `huggingface-hub` é usado somente para downloads explícitos (`--allow-download`), com `HF_HUB_DISABLE_TELEMETRY=1`.
 
-### Modelos e dados
+### Modelos, runtimes e dados
 
-| Artefato | Origem | Revisão | Tamanho | Licença |
-| --- | --- | --- | --- | --- |
-| faster-whisper small.en | huggingface.co/Systran/faster-whisper-small.en | d1d751a5f8 | 464 MiB | MIT (pesos Whisper, OpenAI) |
-| faster-whisper medium.en | huggingface.co/Systran/faster-whisper-medium.en | a29b04bd15 | 1460 MiB | MIT |
-| faster-distil-whisper large-v3 | huggingface.co/Systran/faster-distil-whisper-large-v3 | c3058b4752 | 1446 MiB | MIT (distil-whisper, Hugging Face) |
-| faster-whisper large-v3-turbo | huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo (redireciona para dropbox-dash/…) | 0a363e9161 | 1547 MiB | MIT |
-| AMI Meeting Corpus: IS1009a, ES2004a (Mix-Headset) + anotações manuais 1.6.2 | groups.inf.ed.ac.uk/ami | ver `benchmarks/corpus/ami.manifest.json` | ~83 MB | CC BY 4.0 — atribuição obrigatória |
-
-| Opus-MT opus-mt-tc-big-en-pt (release Marian 2022-03-13), convertido para CTranslate2 float16 | object.pouta.csc.fi/Tatoeba-MT-models/eng-por (Helsinki-NLP) | ver `benchmarks/models/translation.manifest.json` | 823 MiB zip → 448 MiB convertido | CC BY 4.0 — atribuição obrigatória |
-| Argos Translate translate-en_pt 1.9 (somente baseline) | argos-net.com (índice argospm-index) | idem | 63 MiB | CC BY 4.0 (derivado de OPUS-MT, conforme README do pacote) |
-
-| Ollama v0.40.16, versão portátil para Windows x64 | github.com/ollama/ollama/releases (SHA-256 do release e assinatura Authenticode verificados por `scripts/fetch-ollama.ps1`) | v0.40.16 | 1,5 GB zip (inclui as bibliotecas CUDA) | MIT. Runtime separado, não embutido no app. Tem recursos de nuvem, desligados com `OLLAMA_NO_CLOUD=1` |
-| qwen3:4b-instruct (Q4_K_M) | registry.ollama.ai/library/qwen3 (Alibaba Qwen) | digest 0edcdef345 | 2,5 GB | Apache-2.0 |
-| phi4-mini:3.8b (Q4_K_M), só comparação | registry.ollama.ai/library/phi4-mini (Microsoft) | digest 78fad5d182 | 2,5 GB | MIT |
-
-| piper-tts 1.8.0 (+ espeak-ng embutido no wheel) | pypi.org/project/piper-tts, github.com/OHF-Voice/piper1-gpl | wheel win_amd64 SHA-256 5da9bfdb05… (`benchmarks/tts/piper-requirements.txt`, hashes de todas as dependências) | 33 MiB | **GPL-3.0-or-later**. Ambiente próprio em `.tools/piper`, executado como processo separado por stdin/stdout. O código MIT nunca importa o pacote |
-| Kokoro-82M v1.0 (ONNX fp32) + voices-v1.0.bin — **voz da Iris** | github.com/thewh1teagle/kokoro-onnx, release model-files-v1.0 (export dos pesos de huggingface.co/hexgrad/Kokoro-82M) | SHA-256 registrado no primeiro download, sem checksum publicado (`benchmarks/models/kokoro.manifest.json`) | 310 MiB + 27 MiB | Pesos Apache-2.0. Segundo o model card, o treino usou áudio permissivo ou de domínio público e áudio sintético de TTS comerciais fechados: **revisar juridicamente antes de distribuir** |
-| kokoro-onnx 0.6.1 | pypi.org/project/kokoro-onnx | `benchmarks/tts/kokoro-requirements.txt` (hashes) | <1 MiB | MIT |
-| phonemizer 3.6.0 / espeakng-loader 0.2.4 (carrega o espeak-ng) | PyPI | idem | ~10 MiB | **GPL-3.0-or-later** / MIT (a biblioteca espeak-ng carregada é GPL-3.0). Por isso o Kokoro roda pelo host `hosts/kokoro/kokoro_host.py` (GPL-3.0-or-later), em ambiente e processo separados |
-| Voz pt_BR-cadu-medium | huggingface.co/rhasspy/piper-voices, revisão cf910fb59f | ver `benchmarks/models/tts.manifest.json` | 60 MiB | CC0 na cadeia toda (dataset próprio CC0, base nl_BE-rdh CC0). Manter o MODEL_CARD junto com a voz |
-| Voz pt_BR-jeff-medium | idem | idem | 60 MiB | CC0 na cadeia toda (idem) |
+| Artefato | Uso | Origem | Revisão / verificação | Tamanho | Licença |
+| --- | --- | --- | --- | --- | --- |
+| faster-whisper **large-v3-turbo** | **escolhido** (STT) | huggingface.co/mobiuslabsgmbh/faster-whisper-large-v3-turbo (redireciona para dropbox-dash/…) | 0a363e9161, `whisper.manifest.json` | 1547 MiB | MIT (pesos Whisper, OpenAI) |
+| faster-distil-whisper large-v3 | comparação | huggingface.co/Systran/faster-distil-whisper-large-v3 | c3058b4752 | 1446 MiB | MIT (distil-whisper, Hugging Face) |
+| faster-whisper medium.en | comparação | huggingface.co/Systran/faster-whisper-medium.en | a29b04bd15 | 1460 MiB | MIT |
+| faster-whisper small.en | comparação | huggingface.co/Systran/faster-whisper-small.en | d1d751a5f8 | 464 MiB | MIT |
+| **Opus-MT opus-mt-tc-big-en-pt** (release Marian 2022-03-13), convertido para CTranslate2 float16 | **escolhido** (tradução rápida) | object.pouta.csc.fi/Tatoeba-MT-models/eng-por (Helsinki-NLP) | `translation.manifest.json` | 823 MiB zip → 448 MiB convertido | CC BY 4.0, atribuição obrigatória |
+| Argos Translate translate-en_pt 1.9 | baseline | argos-net.com (índice argospm-index) | idem | 63 MiB | CC BY 4.0 (derivado de OPUS-MT, conforme README do pacote) |
+| Ollama v0.40.16, versão portátil para Windows x64 | **runtime do LLM** | github.com/ollama/ollama/releases | SHA-256 do release e Authenticode (`scripts/fetch-ollama.ps1`) | 1,5 GB zip (inclui as bibliotecas CUDA) | MIT. Runtime separado, não embutido no app. Tem recursos de nuvem, desligados com `OLLAMA_NO_CLOUD=1` |
+| **qwen3:4b-instruct** (Q4_K_M) | **escolhido** (refinamento e classificação) | registry.ollama.ai/library/qwen3 (Alibaba Qwen) | digest 0edcdef345, `llm.manifest.json` | 2,5 GB | Apache-2.0 |
+| phi4-mini:3.8b (Q4_K_M) | comparação | registry.ollama.ai/library/phi4-mini (Microsoft) | digest 78fad5d182 | 2,5 GB | MIT |
+| **Kokoro-82M v1.0** (ONNX fp32) + voices-v1.0.bin | **voz da Iris** (75% if_sara + 25% pf_dora) | github.com/thewh1teagle/kokoro-onnx, release model-files-v1.0 (export dos pesos de huggingface.co/hexgrad/Kokoro-82M) | `kokoro.manifest.json` (SHA-256 do primeiro download) | 310 MiB + 27 MiB | Pesos Apache-2.0. Segundo o model card, o treino usou áudio permissivo ou de domínio público e áudio sintético de TTS comerciais fechados: **revisar juridicamente antes de distribuir** |
+| kokoro-onnx 0.6.1 | runtime da voz | pypi.org/project/kokoro-onnx | `benchmarks/tts/kokoro-requirements.txt` (hashes) | <1 MiB | MIT |
+| phonemizer 3.6.0 / espeakng-loader 0.2.4 (carrega o espeak-ng) | runtime da voz | PyPI | idem | ~10 MiB | **GPL-3.0-or-later** / MIT (a biblioteca espeak-ng carregada é GPL-3.0). Por isso o Kokoro roda pelo host `hosts/kokoro/kokoro_host.py` (GPL-3.0-or-later), em ambiente e processo separados |
+| piper-tts 1.8.0 (+ espeak-ng embutido no wheel) | comparação (vozes só masculinas) | pypi.org/project/piper-tts, github.com/OHF-Voice/piper1-gpl | `benchmarks/tts/piper-requirements.txt` (hashes) | 33 MiB | **GPL-3.0-or-later**. Ambiente próprio em `.tools/piper`, executado como processo separado por stdin/stdout. O código MIT nunca importa o pacote |
+| Vozes pt_BR-cadu-medium e pt_BR-jeff-medium | comparação (apagadas do disco, recuperáveis por `fetch-tts.ps1`) | huggingface.co/rhasspy/piper-voices, revisão cf910fb59f | `tts.manifest.json` | 60 MiB cada | CC0 na cadeia toda (dataset próprio CC0, base nl_BE-rdh CC0). Manter o MODEL_CARD junto com a voz |
+| AMI Meeting Corpus: IS1009a, ES2004a (Mix-Headset) + anotações manuais 1.6.2 | dados de teste | groups.inf.ed.ac.uk/ami | `benchmarks/corpus/ami.manifest.json` | ~83 MB | CC BY 4.0, atribuição obrigatória |
 
 Vozes pt-BR excluídas por licença: `pt_BR-faber-medium`, derivada da en_US-lessac (licença Blizzard 2013, só pesquisa e sem uso comercial), e `pt_BR-edresson-low`, derivada da en_US-ryan (CC BY-NC-SA 4.0). O Piper não concede licença sobre as vozes, e a questão de os pesos serem obra derivada dos dados está em aberto (`docs/LICENSING.md` do Piper). Por isso escolhemos vozes cuja cadeia inteira é CC0.
 

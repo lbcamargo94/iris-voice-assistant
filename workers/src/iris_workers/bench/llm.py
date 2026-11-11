@@ -20,6 +20,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from iris_workers import environment
+from iris_workers.bench import manifests
 from iris_workers.bench.llm_dataset import parse_directed_questions
 from iris_workers.bench.resources import ResourceSampler
 from iris_workers.bench.text import percentile
@@ -154,6 +155,10 @@ def main(argv: list[str] | None = None) -> int:
 
     client = OllamaClient(args.url)
     options = {"temperature": 0, "seed": 7, "num_ctx": args.num_ctx}
+    try:
+        pinned = manifests.verify_ollama_model(client.list_models(), args.model)
+    except manifests.ManifestMismatch as error:
+        raise SystemExit(str(error)) from None
     info = client.show(args.model)
     for running in client.running_models():  # cold start: measure load time and VRAM from scratch
         client.unload(running["name"])
@@ -169,6 +174,7 @@ def main(argv: list[str] | None = None) -> int:
             "parameter_size": info.get("details", {}).get("parameter_size"),
             "quantization": info.get("details", {}).get("quantization_level"),
             "family": info.get("details", {}).get("family"),
+            "pinned": pinned,
         },
         "config": {"options": options, "keep_alive": args.keep_alive, "task": args.task, "user_name": args.user_name,
                    "prompt_version": PROMPT_VERSION},

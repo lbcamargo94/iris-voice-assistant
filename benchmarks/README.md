@@ -427,3 +427,29 @@ Todas são da política de STT e devem ser tratadas no POC-001D:
 - Confirmar mais cedo o fim de frase: quando o VAD detectar silêncio depois de pontuação final, confirmar a cauda provisória sem esperar a próxima concordância.
 - Dar prioridade ao sistema em relação ao microfone (ADR-009, RNF-017): por exemplo, exibição do microfone a cada 1 s.
 - Repetir a medição em reuniões mais longas e no teste de 60 minutos (POC-001F).
+
+## Manifestos e verificação (passo 7)
+
+Cada artefato baixado tem revisão e checksum fixados num manifesto, e os scripts e benchmarks recusam o que não bater. A tabela completa está em `docs/LICENSES.md`, em "Inventário em uso". O que mudou neste passo:
+
+- **`models/whisper.manifest.json` (novo).**
+  - O STT agora baixa só a revisão fixada e confere o SHA-256 do `model.bin` antes de carregar.
+  - Um modelo fora do manifesto não é baixado. Antes, `--allow-download` baixava a revisão mais recente do Hugging Face.
+- **`models/llm.manifest.json` (novo).** Uma tag do Ollama pode passar a apontar para outro modelo, então o digest é conferido:
+  - depois do `-Pull`, pelo `scripts/verify-ollama-models.ps1` (consulta só o loopback, sem proxy);
+  - antes de cada benchmark de LLM.
+- **Os relatórios dizem se cada modelo estava fixado** (campo `pinned`).
+- **Corrigido:** `start-ollama.ps1 -Pull a,b` chamado com `-File` recebia `"a,b"` como um único nome.
+- **Teste novo:** `tests/test_manifests.py` confere o formato de todos os checksums, revisões e URLs (HTTPS) e roda no CI.
+
+## Resumo do POC-001A
+
+| Função | Escolha | Onde roda | Decisão |
+| --- | --- | --- | --- |
+| STT | faster-whisper large-v3-turbo int8_float16, LocalAgreement com cadência híbrida | GPU | ADR-008 |
+| Tradução rápida | Opus-MT tc-big `>>pob<<`, beam 4, glossário de termos técnicos | CPU int8, 4 threads | ADR-010 |
+| Refinamento / classificação | qwen3:4b-instruct via Ollama; refinamento só como sugestão, com verificação de fatos | GPU | ADR-010, ADR-013 |
+| Voz da Iris | Kokoro-82M, 75% if_sara + 25% pf_dora, começando pela primeira oração | CPU, threads padrão | ADR-011 |
+| Orçamento | pico de 6,7–6,8 GB de VRAM com tudo ligado (8 GB disponíveis) | — | AI-RUNTIME |
+
+Metas do RNF-015 que ainda não foram atingidas, todas por causa da política do STT (POC-001D): tradução no p95 em 4,2 s (meta 4 s), exibição do sistema no p95 em 1,6 s e do microfone em 2,7 s (meta 1,5 s).

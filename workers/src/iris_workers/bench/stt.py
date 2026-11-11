@@ -22,6 +22,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from iris_workers import environment
+from iris_workers.bench import manifests
 from iris_workers.bench.ami import load_audio, load_reference
 from iris_workers.bench.resources import ResourceSampler
 from iris_workers.bench.text import normalize_words, percentile, word_error_rate
@@ -42,16 +43,26 @@ def sha256_of(path: Path) -> str:
     return digest.hexdigest()
 
 
-def resolve_model(name: str, models_dir: Path, allow_download: bool) -> tuple[Path, dict[str, str]]:
+def resolve_model(name: str, models_dir: Path, allow_download: bool) -> tuple[Path, dict[str, object]]:
+    """Locate (or explicitly download) a model, pinned by ``benchmarks/models/whisper.manifest.json``.
+
+    Listed models load only the pinned revision and must match its model.bin SHA-256. Unlisted models
+    are never downloaded; local copies are allowed and reported as unpinned.
+    """
     from faster_whisper.utils import _MODELS, download_model
 
-    path = Path(download_model(name, cache_dir=str(models_dir), local_files_only=not allow_download))
-    info = {
-        "name": name,
-        "repo": _MODELS.get(name, name),
-        "revision": path.name,
-        "model_bin_sha256": sha256_of(path / "model.bin"),
-    }
+    pinned = manifests.entry("whisper", name)
+    if pinned is None and allow_download:
+        raise SystemExit(f"{name} is not in whisper.manifest.json; add it (repo, revision, SHA-256) before downloading")
+    repo = pinned["repo"] if pinned else _MODELS.get(name, name)
+    path = Path(download_model(repo, cache_dir=str(models_dir), local_files_only=not allow_download,
+                               revision=pinned["revision"] if pinned else None))
+    digest = sha256_of(path / "model.bin")
+    try:
+        is_pinned = manifests.verify(pinned and pinned["modelBinSha256"], digest, f"{name} model.bin")
+    except manifests.ManifestMismatch as error:
+        raise SystemExit(f"{error}; delete {path} and download again") from None
+    info = {"name": name, "repo": repo, "revision": path.name, "model_bin_sha256": digest, "pinned": is_pinned}
     return path, info
 
 

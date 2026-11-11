@@ -1,0 +1,55 @@
+{
+  "description": "POC-001A step 2: faster-whisper (CTranslate2) STT models. Downloads are pinned to the revision below and the model.bin SHA-256 is verified before use (bench/stt.py --allow-download). Weights are stored as float16; the runtime compute type is chosen at load time.",
+  "localRoot": "models/whisper",
+  "source": "https://huggingface.co",
+  "selected": "large-v3-turbo",
+  "models": [
+    {
+      "name": "large-v3-turbo",
+      "repo": "mobiuslabsgmbh/faster-whisper-large-v3-turbo",
+      "repoNote": "Hugging Face redirects this repo to dropbox-dash/faster-whisper-large-v3-turbo; the revision is the same.",
+      "revision": "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf",
+      "modelBinSha256": "e76620f83d5f5b69efd3d87e3dc180c1bd21df9fbebacfd4335e5e1efcc018da",
+      "sizeMiB": 1547,
+      "license": "MIT (OpenAI Whisper weights)",
+      "task": "stt",
+      "languages": ["en"],
+      "languagesNote": "Multilingual model, used with the language fixed to English in the P0 (ADR-008).",
+      "runtimeComputeType": "int8_float16 (CUDA)",
+      "measuredVramMiB": {"loaded": 1100, "peakTwoStreams": 1500}
+    },
+    {
+      "name": "distil-large-v3",
+      "repo": "Systran/faster-distil-whisper-large-v3",
+      "revision": "c3058b475261292e64a0412df1d2681c06260fab",
+      "modelBinSha256": "b79368e19b6623813609431a6e5ee309a71506701ebc49fd7820e692dec7c5f5",
+      "sizeMiB": 1446,
+      "license": "MIT (distil-whisper, Hugging Face)",
+      "task": "stt",
+      "languages": ["en"],
+      "status": "compared, not selected"
+    },
+    {
+      "name": "medium.en",
+      "repo": "Systran/faster-whisper-medium.en",
+      "revision": "a29b04bd15381511a9af671baec01072039215e3",
+      "modelBinSha256": "11b220779aea4c6f3ce9d2549c8a95ea869ed84066864b999531ef53e594fe5b",
+      "sizeMiB": 1460,
+      "license": "MIT (OpenAI Whisper weights)",
+      "task": "stt",
+      "languages": ["en"],
+      "status": "compared, not selected"
+    },
+    {
+      "name": "small.en",
+      "repo": "Systran/faster-whisper-small.en",
+      "revision": "d1d751a5f8271d482d14ca55d9e2deeebbae577f",
+      "modelBinSha256": "62b2a45b05ee59acb4a5341b33ee35e041395d378d418a18acfe4c9e768ee37a",
+      "sizeMiB": 464,
+      "license": "MIT (OpenAI Whisper weights)",
+      "task": "stt",
+      "languages": ["en"],
+      "status": "compared, not selected"
+    }
+  ]
+}

@@ -34,6 +34,7 @@ from pathlib import Path
 import psutil
 
 from iris_workers import environment
+from iris_workers.bench import manifests
 from iris_workers.bench.ami import load_audio
 from iris_workers.bench.resources import ResourceSampler, vram_used_mib
 from iris_workers.bench.stt import make_transcriber, resolve_model
@@ -148,7 +149,12 @@ def main(argv: list[str] | None = None) -> int:
     load["translation_seconds"] = round(time.perf_counter() - t, 2)
 
     llm_options = {"temperature": 0, "seed": 7, "num_ctx": 2048}
+    llm_pinned = None
     if llm:
+        try:
+            llm_pinned = manifests.verify_ollama_model(llm.list_models(), args.llm_model)
+        except manifests.ManifestMismatch as error:
+            raise SystemExit(str(error)) from None
         t = time.perf_counter()
         llm.chat(args.llm_model, [{"role": "user", "content": "Responda apenas: ok"}], options=llm_options,
                  keep_alive="30m")
@@ -339,6 +345,7 @@ def main(argv: list[str] | None = None) -> int:
             "config": {k: (str(v) if isinstance(v, Path) else v) for k, v in vars(args).items()
                        if k not in {"corpus", "models_dir", "out"}},
             "stt_model": stt_info,
+            "llm_model": {"name": args.llm_model, "pinned": llm_pinned} if llm else None,
             "load_seconds": load,
             "wall_seconds": round(wall, 1),
             "stt": [{"meeting": meeting, "role": role, "committed_words": s["words"],

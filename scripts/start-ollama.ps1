@@ -15,6 +15,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# "-File start-ollama.ps1 -Pull a,b" passes one string "a,b"; accept both forms.
+$Pull = @($Pull | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $exe = Join-Path $repoRoot ".tools\ollama-$Version\ollama.exe"
 if (-not (Test-Path $exe)) { throw "Ollama not found; run scripts\fetch-ollama.ps1 first." }
@@ -41,6 +43,8 @@ if ($Pull.Count -gt 0) {
             & $exe pull $model
             if ($LASTEXITCODE -ne 0) { throw "ollama pull $model failed ($LASTEXITCODE)" }
         }
+        # Tags can be re-pointed upstream: the digest must match what was measured (llm.manifest.json).
+        & (Join-Path $PSScriptRoot 'verify-ollama-models.ps1') -Models $Pull
     } finally {
         Stop-Process -Id $server.Id
     }
