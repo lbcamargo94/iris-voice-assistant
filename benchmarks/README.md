@@ -10,6 +10,8 @@ cd workers; $env:UV_CACHE_DIR = "..\.cache\uv"; uv sync --group bench           
 powershell -NoProfile -ExecutionPolicy Bypass -File benchmarks\fetch-translation-models.ps1  # Opus-MT + Argos (~930 MB, CC BY 4.0)
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\fetch-ollama.ps1                  # Ollama portátil (~1,5 GB, MIT)
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start-ollama.ps1 -Pull qwen3:4b-instruct,phi4-mini:3.8b  # loopback, sem nuvem
+powershell -NoProfile -ExecutionPolicy Bypass -File benchmarks\fetch-kokoro.ps1               # voz da Iris: Kokoro + kokoro-onnx (~355 MB, processo separado)
+powershell -NoProfile -ExecutionPolicy Bypass -File benchmarks\fetch-tts.ps1                  # Piper + vozes CC0 (~155 MB), só comparação
 ```
 
 ## STT (passo 2) — faster-whisper + LocalAgreement-2
@@ -283,3 +285,87 @@ O modelo roda com temperatura 0, seed 7 e contexto de 2048 tokens.
 - Medir o qwen3.5:4b e o granite4:3b, se houver espaço de VRAM.
 - Medir a carga do LLM a partir de SSD.
 - Traduzir orações confirmadas vindas do STT real (AMI), não só frases escritas.
+
+## TTS (passo 5) — voz da Iris (Kokoro) e Piper
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File benchmarks\fetch-tts.ps1   # 2 vozes CC0 + piper-tts 1.8.0 (~155 MB)
+cd workers; uv run --group bench python -m iris_workers.bench.tts --voice pt_BR-cadu-medium
+```
+
+**Runtime e licenças do Piper.**
+
+- O `piper-tts` 1.8.0 (OHF-Voice/piper1-gpl, sucessor oficial do Piper) é **GPL-3.0-or-later**. Por isso ele roda num ambiente próprio, `.tools/piper`, instalado a partir de `tts/piper-requirements.txt` com hashes fixados, e sempre em **processo separado**.
+- O código MIT nunca importa o Piper. O adaptador `iris_workers/tts/piper_cli.py` conversa com ele por stdin/stdout:
+  - o processo fica aberto com a voz carregada;
+  - recebe uma fala por linha;
+  - devolve PCM 16 bits mono a 22,05 kHz.
+- As vozes vêm do `rhasspy/piper-voices`, numa revisão fixada e com SHA-256 conferido (`models/tts.manifest.json`).
+- Ficaram só as vozes cuja **cadeia de treino inteira** é CC0, conforme os MODEL_CARD e o `docs/COMMERCIAL_USE.md` do Piper: **cadu** e **jeff**. As duas foram treinadas a partir da voz flamenga rdh, também CC0.
+- Vozes excluídas:
+  - `faber`: derivada da lessac, cujo dataset (Blizzard 2013) só permite pesquisa;
+  - `edresson`: derivada da ryan, CC BY-NC-SA.
+- Não há voz pt-BR feminina com licença liberada.
+
+**Método.**
+
+- Os textos são as 50 traduções rápidas (Opus-MT com glossário), justamente o que o botão "Ouvir" leria, com os termos técnicos em inglês.
+- Cada voz passou por 2 rodadas de 50 frases avulsas e por 5 entradas de 3 frases.
+- A medição é feita com a voz já carregada:
+  - tempo até o primeiro áudio, que é quando a reprodução pode começar;
+  - tempo até o último áudio;
+  - RTF (tempo de síntese ÷ duração do áudio).
+- A partida a frio inclui iniciar o processo, carregar o modelo do HD e sintetizar a primeira fala.
+- RAM e CPU são do processo do Piper (a árvore de processos, porque o `python.exe` do venv é um lançador).
+- Tudo roda na CPU, com o `onnxruntime` padrão. A GPU fica livre para o STT e o LLM.
+
+#### Resultados do Piper — 2026-11-11, Ryzen 7 5800X3D (8 núcleos, 16 threads), CPU
+
+| Voz | 1º áudio, frase: p50 / p95 / máx | Fim, frase: p50 / p95 | 1º áudio, 3 frases: p50 / p95 | Fim, 3 frases: p50 / p95 | RTF | Partida a frio | RAM do processo |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| pt_BR-cadu-medium | 91 / 130 / 157 ms | 91 / 130 ms | 79 / 108 ms | 244 / 326 ms | 0,023 | 3,3 s | 364 MiB |
+| pt_BR-jeff-medium | 94 / 135 / 251 ms | 95 / 135 ms | 84 / 125 ms | 252 / 360 ms | 0,026 | 5,0 s | 417 MiB |
+
+As entradas de 3 frases geraram a mesma duração de áudio que a soma das frases avulsas (diferença de no máximo 0,1 s). Nenhum áudio foi cortado pela detecção de fim de fala.
+
+**O Piper é rápido (~0,1 s até o primeiro áudio), mas todas as vozes pt-BR dele são masculinas.** O usuário quer uma voz feminina, mais humana e jovem, coerente com a persona da Iris. A voz "Maria" do Windows (SAPI) foi testada e recusada por soar robótica. As vozes do Piper foram apagadas do disco e podem ser baixadas de novo pelo `fetch-tts.ps1`. O adaptador `piper_cli.py` e os relatórios ficam como alternativa medida.
+
+### Voz da Iris: Kokoro-82M com mistura de estilos (escolhida em 2026-11-11)
+
+- **Modelo:** Kokoro-82M v1.0 em ONNX fp32 (`models/kokoro.manifest.json`). Os pesos são Apache-2.0. O release não publica checksum; o SHA-256 foi registrado no primeiro download.
+- **Voz:** **75% `if_sara` + 25% `pf_dora`**, na velocidade 1,0, com fonemas do espeak-ng pt-BR. O Kokoro guarda cada voz como um vetor de estilo, e a voz da Iris é a média ponderada de dois deles, sem pesos novos.
+  - A `pf_dora`, única voz feminina pt-BR do Kokoro, soou madura demais.
+  - A `if_sara` (italiana) deu o timbre jovem.
+  - Os 25% de `pf_dora` puxam o sotaque para o brasileiro.
+  - A proporção foi escolhida pelo usuário, de ouvido, entre misturas de 15% a 60% de `pf_dora`.
+- **Processo separado:** o `kokoro-onnx` depende do `phonemizer` (GPL) e do espeak-ng (GPL). Por isso ele roda em `.tools/kokoro`, pelo host `hosts/kokoro/kokoro_host.py`, que tem licença GPL-3.0-or-later declarada no arquivo.
+  - O host fala o **protocolo de stdio v1** (`hosts/README.md`): JSON por linha na entrada e frames de áudio por frase na saída, com fim de fala explícito.
+  - O cliente MIT é o `iris_workers/tts/framed_host.py`, com testes de contrato feitos com um host falso.
+- **Início por oração:** quando a primeira frase tem mais de 60 caracteres, o host gera primeiro a parte até a primeira vírgula ou ponto-e-vírgula. "1,5" não é cortado. O tempo até o primeiro som cresce com o tamanho do primeiro trecho, e isso o reduz. O resto do texto continua frase a frase.
+
+#### Resultados da voz da Iris — 2026-11-11, Ryzen 7 5800X3D, CPU, 100 frases + 10 entradas de 3 frases
+
+| Threads | Início | 1º áudio, frase: p50 / p95 / máx | Frases > 1,5 s | Fim, frase: p50 / p95 | 1º áudio, 3 frases: p50 / p95 | RTF | Núcleos usados |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| padrão (8) | frase inteira | 910 / 1187 / 1496 ms | 0 | 929 / 1187 ms | 875 / 983 ms | 0,24 | 7,3 |
+| **padrão (8)** | **1ª oração** | **789 / 1030 / 1193 ms** | **0** | 962 / 1365 ms | 858 / 938 ms | 0,25 | 7,4 |
+| 4 | frase inteira | 1282 / 1679 / 2194 ms | 12 | 1311 / 1679 ms | 1240 / 1373 ms | 0,34 | 3,8 |
+| 4 | 1ª oração | 1112 / 1469 / 1691 ms | 3 | 1355 / 1903 ms | 1196 / 1328 ms | 0,35 | 3,8 |
+
+- A partida a frio, com o modelo no cache do sistema operacional, leva ~2,2 s: abrir o processo, carregar o modelo e aquecer. O processo ocupa ~650 MiB de RAM.
+- A carga de fundo da CPU durante as rodadas ficou entre 3% e 28%, por causa dos apps do desktop.
+
+### Conclusões
+
+1. **A voz da Iris atende a meta de começar a falar em até 1,5 s (RNF-015) na CPU com 8 threads**: p95 de 1,03 s e máximo de 1,19 s, começando pela primeira oração. Com 4 threads, que é o cenário de CPU disputada, o p95 fica em 1,47 s, no limite, e 3 de 100 frases passam de 1,5 s.
+2. **O Kokoro é ~10 vezes mais lento que o Piper** (RTF 0,25 contra 0,02), mas ainda gera o áudio 4 vezes mais rápido que o tempo de fala. A reprodução nunca fica esperando a síntese depois que começa.
+3. **O processo do Kokoro precisa ser aberto antes do primeiro "Ouvir"** (~2,2 s), no início da reunião ou em segundo plano.
+4. **Contenção:** o Kokoro ocupa ~7 núcleos enquanto sintetiza, e a síntese só acontece quando o usuário pede. O passo 6 decide se o TTS roda com menos threads, na GPU (exige `onnxruntime-gpu` e VRAM) ou se pausa a tradução na CPU durante a leitura.
+
+### Pendências do passo 5
+
+- Avaliar a pronúncia de termos em inglês (build, deploy, dead letter queue) e a emenda entre orações (`tmp/tts-samples/iris-oracao_*` comparadas com `iris-frase_*`).
+- Medir o Kokoro na GPU, se o passo 6 indicar que vale a pena.
+- Teste de realimentação: a voz da Iris não pode voltar ao STT. Isso fica para a captura (POC-001B, ADR-007).
+- Medir a carga a partir de SSD e a contenção de CPU com o pipeline completo (passo 6).
+- V1: voz própria da Iris gerada a partir de uma gravação de referência com direitos de uso, por exemplo com o Chatterbox Multilingual (MIT). Exige VRAM.

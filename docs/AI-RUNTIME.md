@@ -12,7 +12,7 @@ Executar STT, tradução, LLM e TTS localmente por meio de adaptadores substitu�
 | STT | faster-whisper (modelos somente-inglês, ex. distil-large-v3; e large-v3-turbo) + LocalAgreement | NVIDIA Parakeet via sherpa-onnx | ADR-008 |
 | Tradução rápida | Opus-MT `opus-mt-tc-big-en-pt` (CTranslate2, destino PT-BR) | Argos Translate | ADR-010 |
 | Refinamento / Iris | LLM local via Ollama (modelo 3–4B quantizado, escolhido por benchmark) | — | ADR-010, ADR-013 |
-| TTS | Piper (ou sucessor) com voz pt-BR licenciável | — | ADR-011 |
+| TTS | Kokoro-82M (voz da Iris: 75% if_sara + 25% pf_dora), host GPL em processo separado | Piper (vozes pt-BR CC0, só masculinas) | ADR-011 |
 
 Essas são escolhas candidatas, não certificação de qualidade ou licença. Registrar versão, checksum, licença, origem e requisitos de cada artefato antes de distribuir.
 

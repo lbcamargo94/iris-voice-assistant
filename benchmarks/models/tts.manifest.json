@@ -1,0 +1,39 @@
+{
+  "description": "POC-001A step 5: Piper pt-BR voices. Both voices' full training chain is CC0 (own dataset CC0, fine-tuned from nl_BE-rdh-medium, CC0), per MODEL_CARD and piper1-gpl docs/COMMERCIAL_USE.md. Voice names are reused after retrains, so the revision and SHA-256 are pinned; keep MODEL_CARD next to each voice.",
+  "localRoot": "models/tts",
+  "source": "https://huggingface.co/rhasspy/piper-voices",
+  "revision": "cf910fb59f1d79ab3b625a63993a108751c6c25d",
+  "runtime": {
+    "name": "piper-tts",
+    "version": "1.8.0",
+    "license": "GPL-3.0-or-later",
+    "homepage": "https://github.com/OHF-Voice/piper1-gpl",
+    "requirements": "benchmarks/tts/piper-requirements.txt",
+    "venv": ".tools/piper",
+    "note": "Separate environment and separate process; MIT code never imports piper."
+  },
+  "excluded": [
+    {"voice": "pt_BR-faber-medium", "reason": "fine-tuned from en_US-lessac (Blizzard 2013 license: research only, no commercial use)"},
+    {"voice": "pt_BR-edresson-low", "reason": "fine-tuned from en_US-ryan (RyanSpeech, CC BY-NC-SA 4.0)"}
+  ],
+  "voices": [
+    {
+      "name": "pt_BR-cadu-medium",
+      "license": "CC0 (dataset https://github.com/OHF-Voice/voice-datasets; base nl_BE-rdh-medium, CC0)",
+      "files": [
+        {"path": "pt/pt_BR/cadu/medium/pt_BR-cadu-medium.onnx", "bytes": 63221984, "sha256": "d5a662e3f606d5a49dd29ba9ce90c304ae45dd9543f8b0c773bcb0de282499de"},
+        {"path": "pt/pt_BR/cadu/medium/pt_BR-cadu-medium.onnx.json", "bytes": 5465, "sha256": "9fa837b7c1237ea5978bcd7be38c130798e8faa064f754873bb4ce5fc498bd88"},
+        {"path": "pt/pt_BR/cadu/medium/MODEL_CARD", "bytes": 420, "sha256": "ccd97b4369f50e6fba3a4fb730643ef2675f87b43c5d22298404c58f8204a375"}
+      ]
+    },
+    {
+      "name": "pt_BR-jeff-medium",
+      "license": "CC0 (dataset https://github.com/OHF-Voice/voice-datasets; base nl_BE-rdh-medium, CC0)",
+      "files": [
+        {"path": "pt/pt_BR/jeff/medium/pt_BR-jeff-medium.onnx", "bytes": 63221984, "sha256": "82ddcdb01a0342f078bd89ce2815eda27185818d15e15f06fb9a72ac3bce94e1"},
+        {"path": "pt/pt_BR/jeff/medium/pt_BR-jeff-medium.onnx.json", "bytes": 5465, "sha256": "078ea4e42a680ca3cb662a8929237c32e2c0d581f5363f2f55f09bc266497bf6"},
+        {"path": "pt/pt_BR/jeff/medium/MODEL_CARD", "bytes": 420, "sha256": "a81ea309434fe2fa23ed89c8ae270bc8aa40908b14e182fae54c021cc368f7a8"}
+      ]
+    }
+  ]
+}

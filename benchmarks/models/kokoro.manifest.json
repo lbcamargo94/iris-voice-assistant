@@ -1,0 +1,25 @@
+{
+  "description": "POC-001A step 5 (evaluation): Kokoro-82M v1.0 for a natural female pt-BR voice (pf_dora). ONNX export by kokoro-onnx; the release publishes no checksum, so the SHA-256 below was recorded on first download (2026-11-11) and is not confirmed by the publisher.",
+  "localRoot": "models/tts/kokoro",
+  "weightsLicense": "Apache-2.0 (hexgrad/Kokoro-82M). Training data per model card: permissive/public-domain audio plus synthetic audio from closed commercial TTS models.",
+  "runtime": {
+    "name": "kokoro-onnx",
+    "version": "0.6.1",
+    "license": "MIT; depends on phonemizer (GPL-3.0-or-later) and espeakng-loader (MIT, loads the GPL espeak-ng library)",
+    "requirements": "benchmarks/tts/kokoro-requirements.txt",
+    "venv": ".tools/kokoro",
+    "note": "Separate environment and separate process, like Piper."
+  },
+  "files": [
+    {"name": "kokoro-v1.0.onnx", "url": "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx", "bytes": 325532387, "sha256": "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5"},
+    {"name": "voices-v1.0.bin", "url": "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin", "bytes": 28214398, "sha256": "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d"}
+  ],
+  "voices": ["pf_dora", "pm_alex", "pm_santa"],
+  "irisVoice": {
+    "label": "iris-sara75-dora25",
+    "mix": "if_sara:0.75,pf_dora:0.25",
+    "speed": 1.0,
+    "lang": "pt-br",
+    "note": "Chosen by the user by ear on 2026-11-11: weighted mix of Kokoro style vectors (Italian female if_sara for a younger timbre, Brazilian pf_dora for the accent). No new weights; both voices ship in voices-v1.0.bin."
+  }
+}

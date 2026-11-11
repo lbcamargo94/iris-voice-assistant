@@ -2,7 +2,7 @@
 
 ## Licença do projeto
 
-O código do Iris Voice Assistant é MIT (`LICENSE`, decidido em 2026-11-09). A licença cobre apenas o código deste repositório; componentes de terceiros mantêm suas licenças. Componentes copyleft (ex.: sucessor do Piper, GPL-3.0) devem ser usados como processo separado e não incorporados ao código MIT.
+O código do Iris Voice Assistant é MIT (`LICENSE`, decidido em 2026-11-09). **Exceção:** os hosts em `hosts/` são GPL-3.0-or-later, porque importam componentes GPL. Cada arquivo declara isso no cabeçalho SPDX, e os hosts rodam como processos separados (`hosts/README.md`). A licença MIT cobre o restante do código deste repositório; componentes de terceiros mantêm suas licenças. Componentes copyleft (ex.: sucessor do Piper, GPL-3.0) devem ser usados como processo separado e não incorporados ao código MIT.
 
 ## Regra
 
@@ -78,6 +78,15 @@ Revisado em 2026-11-09 a partir dos metadados publicados (PyPI, Hugging Face, p�
 | Ollama v0.40.16, versão portátil para Windows x64 | github.com/ollama/ollama/releases (SHA-256 do release e assinatura Authenticode verificados por `scripts/fetch-ollama.ps1`) | v0.40.16 | 1,5 GB zip (inclui as bibliotecas CUDA) | MIT. Runtime separado, não embutido no app. Tem recursos de nuvem, desligados com `OLLAMA_NO_CLOUD=1` |
 | qwen3:4b-instruct (Q4_K_M) | registry.ollama.ai/library/qwen3 (Alibaba Qwen) | digest 0edcdef345 | 2,5 GB | Apache-2.0 |
 | phi4-mini:3.8b (Q4_K_M), só comparação | registry.ollama.ai/library/phi4-mini (Microsoft) | digest 78fad5d182 | 2,5 GB | MIT |
+
+| piper-tts 1.8.0 (+ espeak-ng embutido no wheel) | pypi.org/project/piper-tts, github.com/OHF-Voice/piper1-gpl | wheel win_amd64 SHA-256 5da9bfdb05… (`benchmarks/tts/piper-requirements.txt`, hashes de todas as dependências) | 33 MiB | **GPL-3.0-or-later**. Ambiente próprio em `.tools/piper`, executado como processo separado por stdin/stdout. O código MIT nunca importa o pacote |
+| Kokoro-82M v1.0 (ONNX fp32) + voices-v1.0.bin — **voz da Iris** | github.com/thewh1teagle/kokoro-onnx, release model-files-v1.0 (export dos pesos de huggingface.co/hexgrad/Kokoro-82M) | SHA-256 registrado no primeiro download, sem checksum publicado (`benchmarks/models/kokoro.manifest.json`) | 310 MiB + 27 MiB | Pesos Apache-2.0. Segundo o model card, o treino usou áudio permissivo ou de domínio público e áudio sintético de TTS comerciais fechados: **revisar juridicamente antes de distribuir** |
+| kokoro-onnx 0.6.1 | pypi.org/project/kokoro-onnx | `benchmarks/tts/kokoro-requirements.txt` (hashes) | <1 MiB | MIT |
+| phonemizer 3.6.0 / espeakng-loader 0.2.4 (carrega o espeak-ng) | PyPI | idem | ~10 MiB | **GPL-3.0-or-later** / MIT (a biblioteca espeak-ng carregada é GPL-3.0). Por isso o Kokoro roda pelo host `hosts/kokoro/kokoro_host.py` (GPL-3.0-or-later), em ambiente e processo separados |
+| Voz pt_BR-cadu-medium | huggingface.co/rhasspy/piper-voices, revisão cf910fb59f | ver `benchmarks/models/tts.manifest.json` | 60 MiB | CC0 na cadeia toda (dataset próprio CC0, base nl_BE-rdh CC0). Manter o MODEL_CARD junto com a voz |
+| Voz pt_BR-jeff-medium | idem | idem | 60 MiB | CC0 na cadeia toda (idem) |
+
+Vozes pt-BR excluídas por licença: `pt_BR-faber-medium`, derivada da en_US-lessac (licença Blizzard 2013, só pesquisa e sem uso comercial), e `pt_BR-edresson-low`, derivada da en_US-ryan (CC BY-NC-SA 4.0). O Piper não concede licença sobre as vozes, e a questão de os pesos serem obra derivada dos dados está em aberto (`docs/LICENSING.md` do Piper). Por isso escolhemos vozes cuja cadeia inteira é CC0.
 
 Fora da lista por licença: `gemma3` (Gemma Terms of Use, com restrições de uso) e `llama3.2` (Llama 3.2 Community License, com restrições e atribuição obrigatória).
 
