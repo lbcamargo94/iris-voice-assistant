@@ -1,6 +1,6 @@
 # ADR-010 — Tradução EN→PT-BR em camadas
 
-- **Estado:** Aceita; motor rápido confirmado pelo benchmark POC-001A (ver "Refinamento 2026-11-10")
+- **Estado:** Aceita. O motor rápido foi confirmado pelo benchmark POC-001A, e o refinamento por LLM passou a ser sugestão com verificação de fatos (ver "Refinamento 2026-11-10", itens 1 a 6).
 - **Data:** 2026-11-09
 
 ## Contexto
@@ -27,6 +27,14 @@ O produto exige português **brasileiro**. O pacote Argos en→pt não garante a
    - Termos que também são verbos em inglês (build, deploy, merge, cache, branch) só são protegidos depois de um determinante ("the build"). "We need to build" continua sendo traduzido.
    - Se o modelo perde ou duplica um placeholder, a frase é traduzida de novo sem proteção. Nenhum termo some em silêncio.
    - Lista padrão em `DEFAULT_TECH_TERMS`. Palavras ambíguas (release, commit, job, query) ficam fora da lista. O glossário do usuário usa o mesmo mecanismo.
+
+6. **Refinamento por LLM vira sugestão (passo 4; decisão do usuário em 2026-11-11). Isso substitui a troca automática do item 3 da Decisão.**
+   - **Medição.** Com o qwen3:4b-instruct, o chrF passou de 72,8 para 73,4, dentro do ruído, com ~0,25 s por frase. O modelo também introduziu erros de fato ("next Tuesday" virou "segunda-feira"; "a couple of weeks" virou "duas semanas") e de concordância. Com modelos de 3 a 4B, a substituição automática não é segura.
+   - **A versão rápida continua sendo a exibida.** A refinada só é oferecida como sugestão, e o usuário decide se aceita. As duas ficam guardadas (`Fast`, `Refined`).
+   - **Verificação de fatos.** Antes de oferecer a sugestão, `translation/refine_guard.py` faz uma checagem determinística. Ela descarta a sugestão se mudarem números, dias da semana, meses, datas relativas, negações, nomes, termos do glossário ou a quantidade de perguntas. Também descarta saída suja, PT-PT novo e mudança grande de tamanho.
+   - **Resultado no benchmark.** A verificação rejeitou os 2 erros de fato e nenhuma das melhorias.
+   - **Limite.** Ela não checa gramática nem sentido; por isso o refinamento fica como sugestão.
+   - **Pendente.** A forma de exibir e aceitar a sugestão fica para a UX (ADR-011).
 
 ## Consequências
 

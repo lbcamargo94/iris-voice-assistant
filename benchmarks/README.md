@@ -8,6 +8,8 @@ Relatórios reproduzíveis de STT, tradução, LLM e TTS. Os JSON em `results/` 
 powershell -NoProfile -ExecutionPolicy Bypass -File benchmarks\fetch-corpus.ps1   # AMI (~83 MB, CC BY 4.0, SHA-256 verificado)
 cd workers; $env:UV_CACHE_DIR = "..\.cache\uv"; uv sync --group bench             # ~1,5 GB (CUDA/cuDNN via pip)
 powershell -NoProfile -ExecutionPolicy Bypass -File benchmarks\fetch-translation-models.ps1  # Opus-MT + Argos (~930 MB, CC BY 4.0)
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\fetch-ollama.ps1                  # Ollama portátil (~1,5 GB, MIT)
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start-ollama.ps1 -Pull qwen3:4b-instruct,phi4-mini:3.8b  # loopback, sem nuvem
 ```
 
 ## STT (passo 2) — faster-whisper + LocalAgreement-2
@@ -187,4 +189,97 @@ uv run --group bench python -m iris_workers.bench.translation --engine opus --gl
 - Revisar as referências na prática e aceitar alternativas na pontuação, com múltiplas referências.
 - Normalizador PT-PT→PT-BR (ADR-010, item 4). Nesta medição, com `>>pob<<`, nenhum marcador apareceu.
 - "flaky test" ainda sai como "teste escamoso". Avaliar se o termo entra na lista padrão ou fica para o refinamento por LLM.
+
+## LLM local (passo 4) — Ollama: refinamento e classificação
+
+```powershell
+cd workers
+uv run --group bench python -m iris_workers.bench.llm --model qwen3:4b-instruct   # refine + classify
+```
+
+**Configuração do runtime:**
+
+- Ollama **v0.40.16**, versão portátil (`scripts/fetch-ollama.ps1`). O script confere o SHA-256 do release e a assinatura Authenticode da Ollama Inc.
+- O instalador ficou de fora porque grava no C:, roda na bandeja e se atualiza sozinho.
+- O servidor sobe com `OLLAMA_HOST=127.0.0.1:11434` e `OLLAMA_NO_CLOUD=1`. O log confirma `Ollama cloud disabled: true` e `Listening on 127.0.0.1:11434`, e conferi que só existe socket em loopback.
+- O cliente (`iris_workers/llm/ollama.py`) usa apenas a biblioteca padrão. Ele recusa URLs fora de loopback e ignora proxies do sistema, para que nenhum prompt seja desviado.
+
+**Tarefas:**
+
+1. **Refinamento (ADR-010, camada 2).** O modelo recebe o original em inglês, a saída do Opus-MT com glossário (chrF 72,8) e os termos que ficam em inglês.
+2. **Classificação (ADR-013, camada 6).** Ele decide se uma fala de participante é dirigida ao usuário (`directed`), a outra pessoa (`not_directed`) ou ao grupo (`ambiguous`). São 32 falas originais em `llm/directed-questions.md`, ainda em rascunho, e o modelo responde em JSON estruturado.
+
+O modelo roda com temperatura 0, seed 7 e contexto de 2048 tokens.
+
+### Resultados do LLM — 2026-11-11, RTX 4060 Ti 8 GB, modelos Q4_K_M
+
+| Modelo | Prompt | Refino: chrF (Opus-MT: 72,8) | Refino: frases alteradas | Refino: total p50 / p95 | Classificação: acerto | Recall directed / not_directed / ambiguous | Classificação: total p50 / p95 | VRAM do modelo |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| qwen3:4b-instruct | v1 | 70,4 | 44/50 | 247 / 346 ms | 0,53 | 1,00 / 0,20 / 0,22 | 494 / 641 ms | 2,7 GB |
+| **qwen3:4b-instruct** | **v2** | 73,4 | 37/50 | 255 / 366 ms | **0,75** | 0,85 / 0,60 / 0,78 | 591 / 939 ms | 2,7 GB |
+| phi4-mini:3.8b | v2 | 72,0 | 18/50 | 209 / 271 ms | 0,56 | 0,23 / 0,90 / 0,67 | 378 / 496 ms | 2,7 GB |
+
+- O primeiro token sai em 27 a 33 ms. Todos os 13 termos do glossário foram mantidos, nenhuma saída veio suja e não apareceu PT-PT.
+- A VRAM do dispositivo foi de ~2,2 para ~5,2 GB com o modelo carregado.
+- **Mudança do prompt v1 para v2** (`llm/prompts.py`, `PROMPT_VERSION`):
+  - no v1, o modelo deixava em inglês palavras fora da lista ("twenty itens", "library") e reescrevia frases que já estavam corretas;
+  - o classificador entendia "directed" como "dirigida a alguém";
+  - o v2 restringe o inglês à lista e classifica por "quem deve responder", pedindo o motivo antes do rótulo.
+
+  Fiz uma única revisão, para não ajustar o prompt demais aos 32 exemplos.
+
+### Conclusões
+
+1. **O refinamento por LLM não pode substituir a tradução automaticamente.** O chrF subiu só 0,6, dentro do ruído. Entre as melhorias reais estão "teste instável", "área jurídica", "fornecedor", "crash" e "tempo limite". Mas o modelo também **introduziu erros de fato**:
+   - "next Tuesday" virou "segunda-feira" (035);
+   - "a couple of weeks" virou "duas semanas", em vez de "algumas semanas" (018);
+   - erro de concordância: "Nós reverteram" (007);
+   - sentido trocado: "Could you share" virou "Podemos compartilhar" (021);
+   - "Vamos não reinventar a roda" (042).
+
+   **Decisão do usuário (2026-11-11):** o refinamento vira **sugestão**, protegida por uma verificação determinística de fatos (`translation/refine_guard.py`). A versão rápida continua sendo a exibida por padrão (ADR-010, refinamento, item 6).
+
+   A verificação compara a versão rápida com a refinada e rejeita a sugestão quando muda:
+   - números (dígitos e por extenso; "um"/"uma" contam como artigo);
+   - dias da semana ("sexta" e "sexta-feira" contam como iguais), meses e datas relativas (ontem, próxima, passada…);
+   - negações;
+   - nomes no meio da frase;
+   - termos do glossário;
+   - quantidade de perguntas.
+
+   Também rejeita saída vazia ou suja, mudança grande de tamanho e PT-PT novo.
+
+   Nova rodada do qwen3 (`20261111T030412Z_…_refine_p2.json`, mesmas saídas e mesma latência da anterior): **2 das 37 mudanças foram rejeitadas**, exatamente os erros de fato 035 e 018. O chrF com a verificação ficou em 73,43. Nenhuma das melhorias boas foi bloqueada. No phi4-mini, nenhuma mudança foi rejeitada.
+
+   **Limite:** a verificação não checa gramática nem sentido. Os erros 007, 021 e 042 passam por ela, e é por isso que o refinamento é sugestão e não substituição.
+2. **Na classificação, o qwen3:4b-instruct foi o melhor** como camada 6 do ADR-013:
+   - acerto de 0,75 e precisão de 0,85 em `directed`;
+   - de 10 falas para outras pessoas, só 1 foi tratada como dirigida ao usuário;
+   - de 13 perguntas dirigidas ao usuário, perdeu 2: uma em que o modelo leu "legal" como pessoa e uma do tipo "which of you".
+
+   O phi4-mini dá justificativas que contradizem o próprio rótulo ("Directly asking Ana" com resposta `not_directed`).
+3. **Latência:**
+   - refinamento, uma frase: ~0,25 s (p95 ~0,37 s);
+   - classificação: 0,6 s (p95 0,9 s).
+
+   Cabe na meta de 4 s, mas soma ~3 GB de VRAM. A conta prevista fica no limite dos 8 GB:
+
+   | Componente | VRAM |
+   | --- | --- |
+   | Desktop | 2,2 GB |
+   | STT | ~2 GB |
+   | Tradução na GPU | 0,55 GB |
+   | LLM | 2,7 GB |
+   | **Total** | **~7,5 GB** |
+
+   O passo 6 vai medir isso de verdade. As saídas são a tradução na CPU e o LLM carregado só sob demanda (`keep_alive`).
+4. **Os modelos estão num HD mecânico** (D:, Seagate ST1000DM010). A primeira carga do qwen3 levou **68 s**. Com o cache do sistema operacional, cai para 2 s. O phi4-mini, lido do disco, levou 10 s. Para o produto, vale recomendar SSD para os modelos ou pré-carregar o LLM antes da reunião. Isso vale também para o Whisper.
+5. **Escolha provisória: qwen3:4b-instruct** (Apache-2.0). O qwen3.5:4b e o granite4:3b ainda não foram medidos.
+
+### Pendências do passo 4
+
+- Revisar os rótulos de `directed-questions.md` e as referências de tradução na prática.
+- Definir na UX (passo de interface) como a sugestão aparece e é aceita. Medir a taxa de falsos positivos da verificação com orações reais do STT.
+- Medir o qwen3.5:4b e o granite4:3b, se houver espaço de VRAM.
+- Medir a carga do LLM a partir de SSD.
 - Traduzir orações confirmadas vindas do STT real (AMI), não só frases escritas.

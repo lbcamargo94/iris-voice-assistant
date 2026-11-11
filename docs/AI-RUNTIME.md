@@ -20,7 +20,7 @@ Essas são escolhas candidatas, não certificação de qualidade ou licença. Re
 
 - STT com idioma fixo em inglês no P0 e streaming por concordância (ADR-008): parciais revisáveis, finais imutáveis.
 - Tradução rápida por oração/frase confirmada; nunca traduzir parcial.
-- Refinamento por LLM opcional e cancelável; preserva a versão rápida.
+- Refinamento por LLM opcional e cancelável. A versão rápida continua sendo a exibida, e a refinada só é oferecida como sugestão quando passa pela verificação de fatos (`translation/refine_guard.py`, ADR-010 item 6).
 - Normalizador PT-PT→PT-BR e glossário aplicados às traduções.
 - TTS somente sob demanda (ADR-011).
 - LLM recebe contexto resumido e apenas quando necessário.
@@ -44,6 +44,8 @@ Total esperado abaixo de 8 GB; medir isolado e combinado na RTX 4060 Ti 8 GB de 
 ## Privacidade
 
 Nenhum worker pode fazer upload de conteúdo. Verificar e documentar o tráfego de rede durante os testes. Downloads de instalação/modelos devem ser explícitos e separados do processamento de reunião. Ollama é um serviço local instalado separadamente: o app deve verificar que ele escuta apenas em loopback (`OLLAMA_HOST` não exposto) e alertar caso contrário.
+
+O Ollama tem recursos de nuvem (modelos na nuvem e busca web). Eles devem ficar desligados com `OLLAMA_NO_CLOUD=1` ou `disable_ollama_cloud` em `~/.ollama/server.json`, e o app deve checar no log a linha `Ollama cloud disabled: true`. No POC usamos a versão portátil (`scripts/fetch-ollama.ps1`, `scripts/start-ollama.ps1`), sem a atualização automática do instalador. Os clientes HTTP do Ollama recusam URLs fora de loopback e ignoram proxies do sistema (`iris_workers/llm/ollama.py`).
 
 ## Orquestração
 

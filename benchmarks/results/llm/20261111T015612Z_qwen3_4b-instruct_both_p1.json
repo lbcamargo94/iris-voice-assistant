@@ -1,0 +1,937 @@
+{
+  "benchmark": "llm",
+  "created_utc": "2026-11-11T01:54:35+00:00",
+  "environment": {
+    "python_version": "3.12.16",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "machine": "AMD64",
+    "processor": "AMD64 Family 25 Model 33 Stepping 2, AuthenticAMD",
+    "gpus": [
+      {
+        "name": "NVIDIA GeForce RTX 4060 Ti",
+        "memory_total_mib": 8188,
+        "driver_version": "616.92"
+      }
+    ]
+  },
+  "versions": {
+    "ollama": "0.40.16"
+  },
+  "model": {
+    "name": "qwen3:4b-instruct",
+    "digest": "0edcdef34593eac1aa2be9c7d06c432dcf81945adca5eca2f27662c18f168ba0",
+    "parameter_size": "4.0B",
+    "quantization": "Q4_K_M",
+    "family": "qwen3",
+    "vram_mib": 2742.9,
+    "resident_mib": 2742.9,
+    "context_length": 2048
+  },
+  "config": {
+    "options": {
+      "temperature": 0,
+      "seed": 7,
+      "num_ctx": 2048
+    },
+    "keep_alive": "10m",
+    "task": "both",
+    "user_name": "Ana"
+  },
+  "cold_load": {
+    "wall_seconds": 67.75,
+    "ollama_load_seconds": 38.1
+  },
+  "refine": {
+    "fast_report": "20261110T224032Z_opus_pob_cuda_int8_float16_b4_glossary.json",
+    "chrf_fast": 72.79,
+    "chrf_refined": 70.43,
+    "changed": 44,
+    "unclean_outputs": 0,
+    "glossary_terms": 13,
+    "glossary_terms_kept": 13,
+    "pt_pt_sentences": 0,
+    "timing": {
+      "first_token_ms": {
+        "p50": 32.8,
+        "p95": 35.9
+      },
+      "total_ms": {
+        "p50": 247.3,
+        "p95": 345.9,
+        "max": 464.6
+      },
+      "output_tokens_mean": 18.4,
+      "prompt_tokens_mean": 195.0
+    },
+    "items": [
+      {
+        "id": "001",
+        "source": "I finished the integration tests yesterday, and they're all passing now.",
+        "fast": "Terminei os testes de integração ontem, e todos estão passando agora.",
+        "refined": "Finalizei os testes de integração ontem, e todos estão passando agora.",
+        "reference": "Terminei os testes de integração ontem e agora todos estão passando.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "002",
+        "source": "We're still blocked by the API changes from the platform team.",
+        "fast": "Ainda estamos bloqueados pelas mudanças de API da equipe da plataforma.",
+        "refined": "Ainda estamos bloqueados pelas mudanças da API da equipe da plataforma.",
+        "reference": "Ainda estamos travados pelas mudanças na API do time de plataforma.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "003",
+        "source": "The migration is about eighty percent done, but the last part is the hardest.",
+        "fast": "A migração é cerca de oitenta por cento feito, mas a última parte é a mais difícil.",
+        "refined": "A migração está em torno de 80 por cento, mas a última parte é a mais difícil.",
+        "reference": "A migração está uns oitenta por cento pronta, mas a última parte é a mais difícil.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "004",
+        "source": "I didn't have time to look at the bug you mentioned last week.",
+        "fast": "Não tive tempo de ver o bug que você mencionou semana passada.",
+        "refined": "Eu não tive tempo de ver o bug que você mencionou na semana passada.",
+        "reference": "Não tive tempo de olhar o bug que você mencionou semana passada.",
+        "clean": true,
+        "terms": [
+          "bug"
+        ],
+        "terms_kept": [
+          "bug"
+        ],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "005",
+        "source": "The build has been failing since this morning because of a flaky test.",
+        "fast": "O build está falhando desde esta manhã por causa de um teste escamoso.",
+        "refined": "O build está falhando desde esta manhã devido a um teste instável.",
+        "reference": "O build está falhando desde hoje de manhã por causa de um teste instável.",
+        "clean": true,
+        "terms": [
+          "build"
+        ],
+        "terms_kept": [
+          "build"
+        ],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "006",
+        "source": "Most of the work this sprint went into fixing performance issues.",
+        "fast": "A maior parte do trabalho desta sprint foi para corrigir problemas de desempenho.",
+        "refined": "A maior parte do trabalho desta sprint foi para resolver problemas de desempenho.",
+        "reference": "A maior parte do trabalho desta sprint foi para corrigir problemas de desempenho.",
+        "clean": true,
+        "terms": [
+          "sprint"
+        ],
+        "terms_kept": [
+          "sprint"
+        ],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "007",
+        "source": "We rolled back the release because the error rate went up after the deploy.",
+        "fast": "Nós revertemos a liberação porque a taxa de erro subiu depois do deploy.",
+        "refined": "Nós revertemos a liberação porque a taxa de erro subiu após o deploy.",
+        "reference": "Fizemos rollback da versão porque a taxa de erros subiu depois do deploy.",
+        "clean": true,
+        "terms": [
+          "deploy"
+        ],
+        "terms_kept": [
+          "deploy"
+        ],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "008",
+        "source": "Staging is up again, so you can test your changes there.",
+        "fast": "Staging está de novo, então você pode testar suas mudanças lá.",
+        "refined": "O staging está de volta, então você pode testar suas mudanças lá.",
+        "reference": "O ambiente de staging voltou, então você pode testar suas mudanças lá.",
+        "clean": true,
+        "terms": [
+          "Staging"
+        ],
+        "terms_kept": [
+          "Staging"
+        ],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "009",
+        "source": "We need to add an index to that table, otherwise the query will time out.",
+        "fast": "Precisamos adicionar um índice a essa tabela, caso contrário, a consulta será interrompida.",
+        "refined": "Precisamos adicionar um índice nessa tabela, caso contrário, a consulta ultrapassará o tempo limite.",
+        "reference": "Precisamos adicionar um índice naquela tabela, senão a consulta vai dar timeout.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "010",
+        "source": "The memory leak only happens when the cache is full.",
+        "fast": "O vazamento de memória só acontece quando o cache está cheio.",
+        "refined": "O memory leak só acontece quando o cache está cheio.",
+        "reference": "O vazamento de memória só acontece quando o cache está cheio.",
+        "clean": true,
+        "terms": [
+          "cache"
+        ],
+        "terms_kept": [
+          "cache"
+        ],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "011",
+        "source": "Can you open a pull request so we can review it before the merge?",
+        "fast": "Pode abrir um pull request para que possamos revisá-lo antes do merge?",
+        "refined": "Pode abrir um pull request para que possamos revisá-lo antes do merge?",
+        "reference": "Você pode abrir um pull request para revisarmos antes do merge?",
+        "clean": true,
+        "terms": [
+          "pull request",
+          "merge"
+        ],
+        "terms_kept": [
+          "pull request",
+          "merge"
+        ],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "012",
+        "source": "The service retries three times and then sends the message to a dead letter queue.",
+        "fast": "O serviço é repetido três vezes e então envia a mensagem para uma dead letter queue.",
+        "refined": "O serviço tenta três vezes e, em seguida, envia a mensagem para uma dead letter queue.",
+        "reference": "O serviço tenta de novo três vezes e depois manda a mensagem para uma dead letter queue.",
+        "clean": true,
+        "terms": [
+          "dead letter queue"
+        ],
+        "terms_kept": [
+          "dead letter queue"
+        ],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "013",
+        "source": "Latency spikes every hour when the batch job starts.",
+        "fast": "A latência aumenta a cada hora quando o trabalho em lote começa.",
+        "refined": "Os picos de latência ocorrem a cada hora quando o job em lote começa.",
+        "reference": "A latência dá picos a cada hora, quando o job em lote começa.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "014",
+        "source": "We should move the secrets out of the config file and into the vault.",
+        "fast": "Devemos tirar os segredos do arquivo de configuração e entrar no cofre.",
+        "refined": "Devemos remover os segredos do arquivo de configuração e colocá-los no cofre.",
+        "reference": "Devemos tirar os segredos do arquivo de configuração e colocar no cofre.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "015",
+        "source": "The new endpoint returns a paginated list, twenty items per page.",
+        "fast": "O novo endpoint retorna uma lista paginada, vinte itens por página.",
+        "refined": "O novo endpoint retorna uma lista paginada, twenty itens por página.",
+        "reference": "O novo endpoint retorna uma lista paginada, vinte itens por página.",
+        "clean": true,
+        "terms": [
+          "endpoint"
+        ],
+        "terms_kept": [
+          "endpoint"
+        ],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "016",
+        "source": "If we upgrade the library, we'll have to rewrite part of the authentication flow.",
+        "fast": "Se atualizarmos a biblioteca, teremos que reescrever parte do fluxo de autenticação.",
+        "refined": "Se atualizarmos a library, teremos que reescrever parte do authentication flow.",
+        "reference": "Se atualizarmos a biblioteca, vamos ter que reescrever parte do fluxo de autenticação.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "017",
+        "source": "The dashboard shows the CPU usage, but not the memory.",
+        "fast": "O dashboard mostra o uso da CPU, mas não a memória.",
+        "refined": "O dashboard mostra o uso da CPU, mas não o uso da memória.",
+        "reference": "O dashboard mostra o uso de CPU, mas não o de memória.",
+        "clean": true,
+        "terms": [
+          "dashboard"
+        ],
+        "terms_kept": [
+          "dashboard"
+        ],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "018",
+        "source": "Let's keep the old version behind a feature flag for a couple of weeks.",
+        "fast": "Vamos manter a versão antiga atrás de uma feature flag por algumas semanas.",
+        "refined": "Vamos manter a versão antiga atrás de uma feature flag por duas semanas.",
+        "reference": "Vamos manter a versão antiga atrás de uma feature flag por umas duas semanas.",
+        "clean": true,
+        "terms": [
+          "feature flag"
+        ],
+        "terms_kept": [
+          "feature flag"
+        ],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "019",
+        "source": "Do you have any concerns about the timeline?",
+        "fast": "Tem alguma preocupação com a linha do tempo?",
+        "refined": "Você tem alguma preocupação com o prazo?",
+        "reference": "Você tem alguma preocupação com o cronograma?",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "020",
+        "source": "What do you think, should we ship it on Friday or wait until Monday?",
+        "fast": "O que você acha, devemos enviá-lo na sexta ou esperar até segunda-feira?",
+        "refined": "O que acha, devemos entregar na sexta ou esperar até segunda?",
+        "reference": "O que você acha, a gente lança na sexta ou espera até segunda?",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "021",
+        "source": "Could you share your screen so we can all see the error?",
+        "fast": "Poderia compartilhar sua tela para que todos possamos ver o erro?",
+        "refined": "Poderia compartilhar sua tela para que todos vejam o erro?",
+        "reference": "Você pode compartilhar a tela para todo mundo ver o erro?",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "022",
+        "source": "Who's going to own the follow-up with the client?",
+        "fast": "Quem será o dono do follow-up com o cliente?",
+        "refined": "Quem vai fazer o seguimento com o cliente?",
+        "reference": "Quem vai ficar responsável pelo retorno ao cliente?",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "023",
+        "source": "Is anyone else seeing this issue, or is it just me?",
+        "fast": "Alguém mais está vendo esse problema, ou sou só eu?",
+        "refined": "Alguém mais está vendo esse problema ou é só eu?",
+        "reference": "Mais alguém está vendo esse problema ou sou só eu?",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "024",
+        "source": "How long do you think it'll take to fix?",
+        "fast": "Quanto tempo você acha que vai demorar para consertar?",
+        "refined": "Acha que vai levar quanto tempo para consertar?",
+        "reference": "Quanto tempo você acha que vai levar para corrigir?",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "025",
+        "source": "Sorry, can you repeat the last part? You broke up a little.",
+        "fast": "Desculpe, pode repetir a última parte? Você terminou um pouco.",
+        "refined": "Desculpe, pode repetir a última parte? Você interrompeu um pouco.",
+        "reference": "Desculpa, pode repetir a última parte? Você cortou um pouco.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "026",
+        "source": "Did we ever get an answer from legal about the contract?",
+        "fast": "Alguma vez recebemos uma resposta legal sobre o contrato?",
+        "refined": "Já pegamos uma resposta da área legal sobre o contrato?",
+        "reference": "A gente chegou a ter uma resposta do jurídico sobre o contrato?",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "027",
+        "source": "Okay, so we agreed to postpone the launch by one week.",
+        "fast": "Certo, então concordamos em adiar o lançamento em uma semana.",
+        "refined": "Ok, então concordamos em adiar o lançamento por uma semana.",
+        "reference": "Certo, então combinamos adiar o lançamento em uma semana.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "028",
+        "source": "Let's go with the second option, it's cheaper and easier to maintain.",
+        "fast": "Vamos com a segunda opção, é mais barato e mais fácil de manter.",
+        "refined": "Vamos com a segunda opção, é mais barato e mais fácil de manter.",
+        "reference": "Vamos com a segunda opção, é mais barata e mais fácil de manter.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "029",
+        "source": "We decided not to support the old browsers anymore.",
+        "fast": "Decidimos não apoiar mais os navegadores antigos.",
+        "refined": "Decidimos parar de suportar os navegadores antigos.",
+        "reference": "Decidimos não dar mais suporte aos navegadores antigos.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "030",
+        "source": "The final call is Maria's, but the team is leaning towards option A.",
+        "fast": "A última chamada é da Maria, mas a equipe está inclinada para a opção A.",
+        "refined": "A última chamada é da Maria, mas a equipe está favorável à opção A.",
+        "reference": "A decisão final é da Maria, mas o time está tendendo para a opção A.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "031",
+        "source": "I'll send the meeting notes to everyone after the call.",
+        "fast": "Enviarei as notas da reunião para todos depois da ligação.",
+        "refined": "Eu envio as anotações da reunião para todos depois da chamada.",
+        "reference": "Vou mandar a ata da reunião para todo mundo depois da call.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "032",
+        "source": "John, can you update the ticket and assign it to me?",
+        "fast": "John, você pode atualizar o ticket e atribuí-lo a mim?",
+        "refined": "John, você pode atualizar o ticket e atribuí-lo a mim?",
+        "reference": "John, você pode atualizar o ticket e atribuir para mim?",
+        "clean": true,
+        "terms": [
+          "ticket"
+        ],
+        "terms_kept": [
+          "ticket"
+        ],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "033",
+        "source": "Please review the document by Thursday so we can sign off on it.",
+        "fast": "Por favor, revise o documento até quinta-feira para que possamos assinar.",
+        "refined": "Por favor, revise o documento até quinta-feira para que possamos dar o ok.",
+        "reference": "Por favor, revisem o documento até quinta para podermos aprovar.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "034",
+        "source": "Someone needs to talk to the vendor about the license renewal.",
+        "fast": "Alguém precisa falar com o vendedor sobre a renovação da licença.",
+        "refined": "Alguém precisa falar com o fornecedor sobre a renovação da licença.",
+        "reference": "Alguém precisa falar com o fornecedor sobre a renovação da licença.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "035",
+        "source": "I'll set up a follow-up meeting for next Tuesday at ten.",
+        "fast": "Vou marcar uma reunião de acompanhamento para a próxima terça-feira às dez.",
+        "refined": "Vou marcar uma reunião de acompanhamento para segunda-feira às dez.",
+        "reference": "Vou marcar uma reunião de acompanhamento para terça que vem às dez.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "036",
+        "source": "The budget for the next quarter is two hundred and fifty thousand dollars.",
+        "fast": "O orçamento para o próximo trimestre é de duzentos e cinquenta mil dólares.",
+        "refined": "O orçamento para o próximo trimestre é de duzentos e cinquenta mil dólares.",
+        "reference": "O orçamento do próximo trimestre é de duzentos e cinquenta mil dólares.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "037",
+        "source": "Response time went from 300 milliseconds down to 120.",
+        "fast": "O tempo de resposta passou de 300 milissegundos para 120.",
+        "refined": "O tempo de resposta caiu de 300 milissegundos para 120.",
+        "reference": "O tempo de resposta caiu de 300 milissegundos para 120.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "038",
+        "source": "We have about 1.5 million active users, up 12% from last year.",
+        "fast": "Temos cerca de 1,5 milhão de usuários ativos, um aumento de 12% em relação ao ano passado.",
+        "refined": "Temos cerca de 1,5 milhão de usuários ativos, um aumento de 12% em relação ao ano passado.",
+        "reference": "Temos cerca de 1,5 milhão de usuários ativos, 12% a mais que no ano passado.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "039",
+        "source": "The deadline is March 3rd, which gives us less than three weeks.",
+        "fast": "O prazo é 3 de março, o que nos dá menos de três semanas.",
+        "refined": "O prazo é 3 de março, o que nos dá menos de três semanas.",
+        "reference": "O prazo é 3 de março, o que nos dá menos de três semanas.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "040",
+        "source": "Version 2.4 fixes the crash on startup.",
+        "fast": "A versão 2.4 corrige a falha na inicialização.",
+        "refined": "A versão 2.4 corrige o crash na inicialização.",
+        "reference": "A versão 2.4 corrige o travamento na inicialização.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "041",
+        "source": "That's a good point, I hadn't thought about that.",
+        "fast": "Esse é um bom ponto, eu não tinha pensado nisso.",
+        "refined": "Isso é um bom ponto, eu não tinha pensado nisso.",
+        "reference": "Bom ponto, eu não tinha pensado nisso.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "042",
+        "source": "Let's not reinvent the wheel here.",
+        "fast": "Não vamos reinventar a roda aqui.",
+        "refined": "Vamos deixar de reinventar a roda aqui.",
+        "reference": "Não vamos reinventar a roda aqui.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "043",
+        "source": "We're running out of time, so let's wrap up.",
+        "fast": "Estamos ficando sem tempo, então vamos terminar.",
+        "refined": "Estamos sem tempo, então vamos encerrar.",
+        "reference": "Estamos ficando sem tempo, então vamos encerrar.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "044",
+        "source": "I'm on the same page as Alex on this one.",
+        "fast": "Estou na mesma página que o Alex.",
+        "refined": "Estou de acordo com o Alex nisso.",
+        "reference": "Concordo com o Alex nessa.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "045",
+        "source": "Can we take this offline? It's getting too detailed.",
+        "fast": "Podemos tirar isso do ar? Está ficando muito detalhado.",
+        "refined": "Podemos conversar isso fora do ar? Está ficando muito detalhado.",
+        "reference": "Podemos conversar sobre isso depois, à parte? Está ficando detalhado demais.",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "046",
+        "source": "so um basically what we need is uh a way to track the the requests",
+        "fast": "Então, basicamente, precisamos de uma maneira de rastrear os pedidos.",
+        "refined": "Então, basicamente, precisamos de uma forma de rastrear os requests.",
+        "reference": "então basicamente o que a gente precisa é um jeito de rastrear as requisições",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "047",
+        "source": "yeah no I think that makes sense but we should double check with the security team first",
+        "fast": "Sim, não, acho que faz sentido, mas devemos verificar com a equipe de segurança primeiro.",
+        "refined": "Sim, não, acho que faz sentido, mas devemos confirmar com a equipe de segurança primeiro.",
+        "reference": "é, não, acho que faz sentido, mas devemos confirmar com o time de segurança antes",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "048",
+        "source": "the thing is we can't really scale it without changing the database",
+        "fast": "A questão é que não podemos realmente escalá-lo sem mudar o banco de dados.",
+        "refined": "O problema é que não conseguimos realmente escalá-lo sem mudar o banco de dados.",
+        "reference": "o problema é que a gente não consegue escalar isso sem mudar o banco de dados",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "049",
+        "source": "I mean it works but it's not it's not ideal you know",
+        "fast": "Quer dizer, funciona, mas não é o ideal.",
+        "refined": "Quero dizer, funciona, mas não é ideal.",
+        "reference": "quer dizer, funciona, mas não é ideal, sabe",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      },
+      {
+        "id": "050",
+        "source": "okay cool so next item on the agenda is the hiring plan",
+        "fast": "Tudo bem, então o próximo item na agenda é o plano de contratação",
+        "refined": "Tudo bem, então o próximo item da agenda é o hiring plan",
+        "reference": "beleza, então o próximo item da pauta é o plano de contratação",
+        "clean": true,
+        "terms": [],
+        "terms_kept": [],
+        "pt_pt_markers": []
+      }
+    ]
+  },
+  "classify": {
+    "items_total": 32,
+    "accuracy": 0.531,
+    "invalid_outputs": 0,
+    "recall": {
+      "directed": 1.0,
+      "not_directed": 0.2,
+      "ambiguous": 0.222
+    },
+    "directed_precision": 0.481,
+    "not_directed_flagged_directed": 7,
+    "confusion": {
+      "ambiguous->ambiguous": 2,
+      "ambiguous->directed": 7,
+      "directed->directed": 13,
+      "not_directed->ambiguous": 1,
+      "not_directed->directed": 7,
+      "not_directed->not_directed": 2
+    },
+    "timing": {
+      "first_token_ms": {
+        "p50": 29.6,
+        "p95": 51.6
+      },
+      "total_ms": {
+        "p50": 494.1,
+        "p95": 640.5,
+        "max": 654.9
+      },
+      "output_tokens_mean": 38.7,
+      "prompt_tokens_mean": 187.8
+    },
+    "items": [
+      {
+        "id": "001",
+        "utterance": "Ana, did you also update the migration script?",
+        "expected": "directed",
+        "predicted": "directed",
+        "reason": "The utterance directly addresses Ana by name and asks a question about her actions."
+      },
+      {
+        "id": "002",
+        "utterance": "Mark, did the alerts fire again?",
+        "expected": "not_directed",
+        "predicted": "directed",
+        "reason": "The utterance addresses Mark directly and asks a question about alerts, which follows up on the previous mention of Mark being on call."
+      },
+      {
+        "id": "003",
+        "utterance": "Are you sure the tests are stable enough?",
+        "expected": "directed",
+        "predicted": "directed",
+        "reason": "The utterance directly addresses Ana by asking if she is sure about the tests being stable, indicating a question directed to her."
+      },
+      {
+        "id": "004",
+        "utterance": "Does anyone have blockers?",
+        "expected": "ambiguous",
+        "predicted": "directed",
+        "reason": "The utterance 'Does anyone have blockers?' is a question addressed to Ana, as it seeks input from the group, implying she may have a response or concern."
+      },
+      {
+        "id": "005",
+        "utterance": "What do you think, Ana, can we fit it in this sprint?",
+        "expected": "directed",
+        "predicted": "directed",
+        "reason": "The utterance directly addresses Ana with 'What do you think, Ana,' indicating a request for her opinion."
+      },
+      {
+        "id": "006",
+        "utterance": "John, can you send me the numbers before that?",
+        "expected": "not_directed",
+        "predicted": "directed",
+        "reason": "The utterance addresses John directly and requests action ('send me the numbers') that is intended for Ana, as it follows up on a prior statement about talking to finance."
+      },
+      {
+        "id": "007",
+        "utterance": "Can you share the link in the chat?",
+        "expected": "directed",
+        "predicted": "directed",
+        "reason": "The utterance directly asks Ana to share a link, addressing her by name and requesting an action."
+      },
+      {
+        "id": "008",
+        "utterance": "How do we avoid that next time?",
+        "expected": "ambiguous",
+        "predicted": "directed",
+        "reason": "The utterance is a question addressed directly to Ana, as it follows up on a previous statement about the outage and seeks her input on prevention."
+      },
+      {
+        "id": "009",
+        "utterance": "Sarah, how long does a full run take now?",
+        "expected": "not_directed",
+        "predicted": "directed",
+        "reason": "The utterance directly addresses Sarah, who is the person just mentioned in the previous statement, and asks a question about her work, thus targeting Ana if she is Sarah."
+      },
+      {
+        "id": "010",
+        "utterance": "Great, when do you think it'll be done?",
+        "expected": "directed",
+        "predicted": "directed",
+        "reason": "The utterance is a question addressed directly to Ana, asking about the timeline for completing the login bug she has taken."
+      },
+      {
+        "id": "011",
+        "utterance": "Is the budget approved already?",
+        "expected": "ambiguous",
+        "predicted": "directed",
+        "reason": "The utterance is a question directly addressed to Ana, as it asks about the status of the budget, which is likely something she would need to confirm or report."
+      },
+      {
+        "id": "012",
+        "utterance": "Do the limits apply to the internal services too?",
+        "expected": "ambiguous",
+        "predicted": "directed",
+        "reason": "The utterance is a question directly addressed to Ana, as it follows up on what she mentioned last week."
+      },
+      {
+        "id": "013",
+        "utterance": "Can you hear us now?",
+        "expected": "directed",
+        "predicted": "directed",
+        "reason": "The utterance 'Can you hear us now?' is a direct request addressed to Ana, asking if she can hear the conversation."
+      },
+      {
+        "id": "014",
+        "utterance": "Why did we pick this database in the first place?",
+        "expected": "ambiguous",
+        "predicted": "ambiguous",
+        "reason": "The question is addressed to the group, not specifically to Ana, and could be interpreted as seeking collective reasoning rather than a direct inquiry to her."
+      },
+      {
+        "id": "015",
+        "utterance": "Why does this always happen on Fridays?",
+        "expected": "not_directed",
+        "predicted": "ambiguous",
+        "reason": "The utterance refers to a pattern ('always on Fridays') that could involve Ana or others, without explicitly addressing her."
+      },
+      {
+        "id": "016",
+        "utterance": "And what did legal say about the penalty clause?",
+        "expected": "directed",
+        "predicted": "directed",
+        "reason": "The utterance directly asks Ana about what legal said, indicating it is addressed to her."
+      },
+      {
+        "id": "017",
+        "utterance": "Priya, are you blocked on anything?",
+        "expected": "not_directed",
+        "predicted": "directed",
+        "reason": "The utterance directly addresses Priya, who is a specific individual, and asks if she is blocked on anything, which is a request directed to her."
+      },
+      {
+        "id": "018",
+        "utterance": "Can everyone see it?",
+        "expected": "ambiguous",
+        "predicted": "directed",
+        "reason": "The utterance 'Can everyone see it?' is addressed to Ana, as it seeks her confirmation about whether she can see the shared screen, implying a request for her attention to verify visibility."
+      },
+      {
+        "id": "019",
+        "utterance": "Why B and not A?",
+        "expected": "directed",
+        "predicted": "directed",
+        "reason": "The utterance 'Why B and not A?' directly addresses Ana by referencing her previous choice and asking for an explanation."
+      },
+      {
+        "id": "020",
+        "utterance": "So today we'll cover the roadmap and the hiring plan.",
+        "expected": "not_directed",
+        "predicted": "not_directed",
+        "reason": "The utterance is a general statement about the meeting agenda, not addressed to Ana or the user specifically."
+      },
+      {
+        "id": "021",
+        "utterance": "Ana, can you post them today?",
+        "expected": "directed",
+        "predicted": "directed",
+        "reason": "The utterance directly addresses Ana with a request to act on something."
+      },
+      {
+        "id": "022",
+        "utterance": "What did they want?",
+        "expected": "not_directed",
+        "predicted": "directed",
+        "reason": "The utterance 'What did they want?' is a question addressed to Ana, as it follows up on Mike's statement and seeks clarification from her."
+      },
+      {
+        "id": "023",
+        "utterance": "Could you also look at the metrics while you're there?",
+        "expected": "directed",
+        "predicted": "directed",
+        "reason": "The utterance directly asks Ana to look at the metrics, addressing her explicitly in a request."
+      },
+      {
+        "id": "024",
+        "utterance": "I told them we would check.",
+        "expected": "not_directed",
+        "predicted": "not_directed",
+        "reason": "The utterance is a report of a previous interaction and does not address Ana directly or include a request or question to her."
+      },
+      {
+        "id": "025",
+        "utterance": "Is the new endpoint deployed?",
+        "expected": "ambiguous",
+        "predicted": "ambiguous",
+        "reason": "The utterance addresses the backend team but does not explicitly include Ana or reference her directly, so it is unclear whether it is directed to her."
+      },
+      {
+        "id": "026",
+        "utterance": "Which of you is taking the on-call shift this weekend?",
+        "expected": "directed",
+        "predicted": "directed",
+        "reason": "The utterance directly addresses Ana by asking which of 'you' is taking the on-call shift, indicating it is a request directed to her."
+      },
+      {
+        "id": "027",
+        "utterance": "Did you get a chance to read it, Ana?",
+        "expected": "directed",
+        "predicted": "directed",
+        "reason": "The utterance directly addresses Ana with a question about whether she received and read the proposal."
+      },
+      {
+        "id": "028",
+        "utterance": "Could you switch to headphones?",
+        "expected": "not_directed",
+        "predicted": "directed",
+        "reason": "The utterance 'Could you switch to headphones?' is a request directly addressed to Ana."
+      },
+      {
+        "id": "029",
+        "utterance": "Nice. Lisa, can you deploy it then?",
+        "expected": "not_directed",
+        "predicted": "directed",
+        "reason": "The utterance includes Ana's name ('Lisa') and requests action from her, indicating it is addressed to her."
+      },
+      {
+        "id": "030",
+        "utterance": "Any volunteers?",
+        "expected": "ambiguous",
+        "predicted": "directed",
+        "reason": "The utterance 'Any volunteers?' is a direct request addressed to Ana, as it asks her or someone in her position to take ownership, implying she might be expected to respond or volunteer."
+      },
+      {
+        "id": "031",
+        "utterance": "Okay, so what would be a realistic estimate?",
+        "expected": "directed",
+        "predicted": "directed",
+        "reason": "The utterance directly follows your statement and asks for a realistic estimate, addressing Ana specifically by building on her input."
+      },
+      {
+        "id": "032",
+        "utterance": "Does that make sense to you guys?",
+        "expected": "ambiguous",
+        "predicted": "directed",
+        "reason": "The utterance addresses Ana explicitly by using 'you guys', which includes her in the group, indicating a direct request for her input."
+      }
+    ]
+  },
+  "resources": {
+    "cpu_percent_avg": 0.0,
+    "cpu_percent_max": 0.8,
+    "rss_mib_max": 60.9,
+    "vram_used_mib_baseline": 2267.6,
+    "vram_used_mib_max": 5206.1,
+    "samples": 368
+  },
+  "resources_note": "VRAM is device-wide (includes the Ollama runner); CPU/RSS are this client only."
+}

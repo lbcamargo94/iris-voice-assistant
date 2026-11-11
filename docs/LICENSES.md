@@ -75,6 +75,12 @@ Revisado em 2026-11-09 a partir dos metadados publicados (PyPI, Hugging Face, p�
 | Opus-MT opus-mt-tc-big-en-pt (release Marian 2022-03-13), convertido para CTranslate2 float16 | object.pouta.csc.fi/Tatoeba-MT-models/eng-por (Helsinki-NLP) | ver `benchmarks/models/translation.manifest.json` | 823 MiB zip → 448 MiB convertido | CC BY 4.0 — atribuição obrigatória |
 | Argos Translate translate-en_pt 1.9 (somente baseline) | argos-net.com (índice argospm-index) | idem | 63 MiB | CC BY 4.0 (derivado de OPUS-MT, conforme README do pacote) |
 
+| Ollama v0.40.16, versão portátil para Windows x64 | github.com/ollama/ollama/releases (SHA-256 do release e assinatura Authenticode verificados por `scripts/fetch-ollama.ps1`) | v0.40.16 | 1,5 GB zip (inclui as bibliotecas CUDA) | MIT. Runtime separado, não embutido no app. Tem recursos de nuvem, desligados com `OLLAMA_NO_CLOUD=1` |
+| qwen3:4b-instruct (Q4_K_M) | registry.ollama.ai/library/qwen3 (Alibaba Qwen) | digest 0edcdef345 | 2,5 GB | Apache-2.0 |
+| phi4-mini:3.8b (Q4_K_M), só comparação | registry.ollama.ai/library/phi4-mini (Microsoft) | digest 78fad5d182 | 2,5 GB | MIT |
+
+Fora da lista por licença: `gemma3` (Gemma Terms of Use, com restrições de uso) e `llama3.2` (Llama 3.2 Community License, com restrições e atribuição obrigatória).
+
 Atribuição AMI: *Carletta, J. et al. (2005). The AMI Meeting Corpus: A Pre-Announcement. MLMI 2005.* Dados usados somente como material de teste; não redistribuídos neste repositório.
 
 Atribuição Opus-MT: *Tiedemann, J. and Thottingal, S. (2020). OPUS-MT — Building open translation services for the World. EAMT 2020*, e *Tiedemann, J. (2020). The Tatoeba Translation Challenge. WMT 2020*. Helsinki-NLP, Universidade de Helsinki. Se o modelo for distribuído com o produto, a atribuição precisa aparecer na tela "Sobre" ou nos avisos de terceiros.

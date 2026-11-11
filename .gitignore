@@ -36,3 +36,6 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Portable third-party runtimes (Ollama), downloaded by scripts/fetch-ollama.ps1
+/.tools/
