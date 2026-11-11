@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>IrisVoiceAssistant.AudioDiagnostics</RootNamespace>
+    <AssemblyName>iris-audio-diag</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!-- POC-001B deliverable: audio diagnostics. Visible, user-started capture only; WAV files are written to tmp/
+       only when the wav option is passed (no automatic persistent recording, AGENTS.md §2). -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\IrisVoiceAssistant.Audio\IrisVoiceAssistant.Audio.csproj" />
+    <ProjectReference Include="..\..\src\IrisVoiceAssistant.Platform.Windows\IrisVoiceAssistant.Platform.Windows.csproj" />
+  </ItemGroup>
+
+</Project>

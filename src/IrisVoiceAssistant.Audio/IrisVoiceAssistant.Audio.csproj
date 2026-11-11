@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>IrisVoiceAssistant.Audio</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Portable audio pipeline: format conversion, framing, timeline, bounded queues (ADR-007, ADR-009).
+       No OS-specific references; platform capture lives in IrisVoiceAssistant.Platform.* (ADR-004). -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\IrisVoiceAssistant.Core\IrisVoiceAssistant.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="IrisVoiceAssistant.Audio.Tests" />
+  </ItemGroup>
+
+</Project>

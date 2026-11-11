@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>IrisVoiceAssistant.Platform.Windows</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <!-- WASAPI capture through a small hand-written COM interop layer (ADR-004, ADR-007). No NuGet dependencies:
+       NAudio has no process loopback, and the interfaces needed are few. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\IrisVoiceAssistant.Core\IrisVoiceAssistant.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="IrisVoiceAssistant.Platform.Windows.Tests" />
+  </ItemGroup>
+
+</Project>

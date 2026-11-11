@@ -67,3 +67,30 @@ VAD (Silero VAD candidato) é usado para evitar inferência em silêncio e delim
 ## Testes
 
 Testar dispositivo padrão, troca de dispositivo, suspensão/retomada, desconexão, áudio silencioso, clipping, canais, diferentes taxas de amostragem, isolamento do TTS nas camadas A e B, fallback quando o process loopback estiver indisponível e aviso de caixa de som.
+
+## Implementação P0 (POC-001B, 2026-11-11)
+
+| Peça | Onde | Observação |
+| --- | --- | --- |
+| Contratos | `IrisVoiceAssistant.Core.Audio` | `AudioFrame` (sequência e posição), `AudioGap` (causa; `MissingSamples` nos episódios de sobrecarga), `AudioStreamCounters` (conciliação), `AudioDeviceInfo`, `IAudioCaptureSource`, `IRawAudioSink` |
+| Pipeline portável | `IrisVoiceAssistant.Audio` | `PcmDecoder` (downmix), `StreamingResampler` (sinc com janela de Kaiser e passo racional exato, sem deriva), `CaptureStreamPipeline` (blocos de 20 ms, linha do tempo e fila `DropOldest` de 30 s), `CaptureStreamRunner` (estados e recuperação) |
+| Windows | `IrisVoiceAssistant.Platform.Windows` | Interop COM própria, sem pacotes: microfone, loopback do dispositivo e process loopback com fallback avisado |
+| Diagnóstico | `tools/IrisVoiceAssistant.AudioDiagnostics` (`iris-audio-diag`) | `devices` e `capture` (opções `--pause-at`/`--resume-at`, `--slow-consumer-ms`, `--self-tone`, `--wav` só em `tmp/`) |
+
+Regras de lacuna:
+- Silêncio do loopback (nada tocando) é preenchido e **não** é lacuna.
+- Falha do dispositivo (discontinuity): o trecho é preenchido e registrado como `DeviceDiscontinuity`.
+- Pausa e perda do dispositivo avançam a posição sem gerar quadros e viram `Paused` ou `DeviceLost`. Parar durante a recuperação também fecha a lacuna.
+- Sobrecarga descarta os quadros mais antigos. Descartes a menos de 1 s um do outro formam **um episódio** `Overflow`, com a duração do trecho e a perda exata.
+
+Validação na máquina de desenvolvimento:
+- **Isolamento:** ver ADR-007, refinamento de 2026-11-11.
+- **Pausa e retomada:** lacuna `Paused` de ~5,04 s; o dispositivo é liberado durante a pausa.
+- **Sobrecarga forçada:** um episódio de 6,1 s, com 3,12 s perdidos e contagem exata.
+- **Desconexão:** detectada na hora (`AUDCLNT_E_DEVICE_INVALIDATED`), com novas tentativas a cada 1 s.
+- **Conciliação e sequência:** fecharam em todas as rodadas.
+
+Pendências:
+- Aviso de **"microfone sem sinal"**: um headset sem fio com o microfone desconectado continua presente no Windows e entrega silêncio quase digital (cerca de −75 dBFS de pico). Hoje isso não se distingue de "ninguém falando".
+- Seguir a troca do dispositivo padrão do **microfone** (`IMMNotificationClient`). Hoje o fluxo reabre o padrão só depois de uma perda.
+- Camada B do isolamento, reconexão real do headset e a sessão de 60 min (POC-001E e F).
