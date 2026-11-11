@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>IrisVoiceAssistant.TransportBench</RootNamespace>
+    <AssemblyName>iris-transport-bench</AssemblyName>
+  </PropertyGroup>
+
+  <!-- POC-001C: compares worker transports (stdio, named pipe, HTTP loopback) with an echo worker
+       (workers/src/iris_workers/bench/transport_echo.py). Standard libraries only; no content is sent. -->
+
+</Project>

@@ -76,7 +76,11 @@ Contratos devem incluir cancelamento, estados, erros tipados, metadados de model
 
 ## 6. Comunicação com workers
 
-Para o P0, preferir processos locais isolados com protocolo JSON-RPC/HTTP local ou pipes. Escolher um mecanismo após protótipo de latência e robustez. Não expor endpoints em interfaces de rede; bind em loopback ou usar IPC. Validar origem, permissões e tamanho de payload.
+Decidido no **ADR-014**:
+- Cada worker é um processo filho, que conversa com o app pelo **stdio** com o Iris Worker Protocol v1: controle em JSON e áudio em binário, até 1 MiB por mensagem, com apresentação, ping, cancelamento e encerramento.
+- O **WorkerHost** (`IrisVoiceAssistant.WorkerHost`) reinicia o worker com espera crescente e marca `Faulted` depois de 5 falhas em 2 minutos.
+- O protocolo fica em `IrisVoiceAssistant.AI.Contracts` (C#) e em `iris_workers.protocol` (Python).
+- Não se expõem endpoints na rede; o único runtime em HTTP é o Ollama, restrito a loopback. Valide origem, permissões e tamanho de payload.
 
 Áudio binário não deve ser codificado em JSON base64 para streaming de alta frequência. Usar transporte binário/IPC adequado e mensagens de controle separadas.
 

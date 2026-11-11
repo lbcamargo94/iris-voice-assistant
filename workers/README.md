@@ -1,6 +1,6 @@
 # Workers Python
 
-Workers locais de IA do Iris Voice Assistant (ADR-003, ADR-012). Executam isolados do app .NET e se comunicam por contratos versionados (transporte a definir no POC-001C).
+Workers locais de IA do Iris Voice Assistant (ADR-003, ADR-012). Executam isolados do app .NET e se comunicam por contratos versionados: stdio com o Iris Worker Protocol v1 (ADR-014, `iris_workers.protocol`).
 
 ## Ambiente
 
@@ -23,7 +23,9 @@ uv run python -m iris_workers.environment   # relatório de ambiente (sem conte�
 | Módulo | Estado |
 | --- | --- |
 | `iris_workers.environment` | Relatório de hardware/software para benchmarks |
-| `speech`, `translation`, `llm`, `tts` | A criar no POC-001A/D/E |
+| `iris_workers.protocol` | Iris Worker Protocol v1: codificação e `WorkerServer` (stdout reservado ao protocolo, logs no stderr) |
+| `iris_workers.testing.contract_worker` | Worker de teste com modos de falha, usado pelos testes de contrato do WorkerHost |
+| `speech`, `translation`, `llm`, `tts` | Adaptadores medidos no POC-001A; os workers de produção entram no POC-001D e E |
 
 ## Regras
 

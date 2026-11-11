@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>IrisVoiceAssistant.AI.Contracts</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Iris Worker Protocol v1 (ADR-014): framing and message codec shared by the WorkerHost and its tests.
+       Portable: BCL only (System.Text.Json). -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\IrisVoiceAssistant.Core\IrisVoiceAssistant.Core.csproj" />
+  </ItemGroup>
+
+</Project>

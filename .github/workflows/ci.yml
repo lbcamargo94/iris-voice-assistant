@@ -25,6 +25,13 @@ jobs:
       - name: Build
         run: dotnet build IrisVoiceAssistant.slnx --no-restore --configuration Release
 
+      # WorkerHost contract tests start the real Python contract worker (ADR-014).
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Sync Python workers (locked)
+        working-directory: workers
+        run: uv sync --locked
+
       - name: Test
         run: dotnet test IrisVoiceAssistant.slnx --no-build --configuration Release
 

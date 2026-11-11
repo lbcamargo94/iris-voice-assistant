@@ -17,7 +17,8 @@ ADRs registram decisões importantes, contexto, alternativas, consequências e e
 - [ADR-011 — Text-first e TTS sob demanda](ADR-011-text-first-on-demand-tts.md)
 - [ADR-012 — Convenções da plataforma .NET e Python](ADR-012-dotnet-platform-conventions.md)
 - [ADR-013 — Detecção de perguntas dirigidas ao usuário](ADR-013-directed-question-detection.md)
+- [ADR-014 — Transporte dos workers: stdio com o Iris Worker Protocol v1](ADR-014-worker-transport-stdio.md)
 
 ## Pendentes
 
-- Transporte C# ↔ workers (refina o ADR-003): decidir após benchmark no POC-001.
+- Nenhuma no momento. O transporte C# ↔ workers foi decidido no ADR-014.

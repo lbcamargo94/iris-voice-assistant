@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>IrisVoiceAssistant.WorkerHost</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Starts and supervises local workers over stdio with the Iris Worker Protocol v1 (ADR-014):
+       hello, ping/pong, requests with cancellation, audio frames, restart with backoff, Faulted state. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\IrisVoiceAssistant.AI.Contracts\IrisVoiceAssistant.AI.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -16,3 +16,12 @@ $diag = "tools\IrisVoiceAssistant.AudioDiagnostics\bin\Release\net10.0-windows\i
 ```
 
 Durante a captura, `p` pausa e retoma, e `q` encerra. O resumo final mostra contadores, lacunas, deriva do relógio, conciliação ("capturadas = processadas + descartadas + na fila") e continuidade da sequência. O código de saída é 0 só quando a conciliação fecha e a sequência é contínua.
+
+## iris-transport-bench (POC-001C)
+
+Compara transportes entre o app e um worker de eco Python (`iris_workers.bench.transport_echo`): stdio, named pipe com `CurrentUserOnly` e HTTP loopback com token. Para cada um, mede a ida e volta de blocos de 20 ms e de mensagens de controle, e a vazão com pipelining. O resultado embasou o ADR-014; o relatório fica em `benchmarks/results/transport/`.
+
+```powershell
+dotnet build tools\IrisVoiceAssistant.TransportBench -c Release
+tools\IrisVoiceAssistant.TransportBench\bin\Release\net10.0-windows\iris-transport-bench.exe 5000
+```

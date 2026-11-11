@@ -1,0 +1,62 @@
+{
+  "benchmark": "transport",
+  "createdUtc": "2026-11-11T19:42:04.5000449Z",
+  "os": "Microsoft Windows NT 10.0.26300.0",
+  "dotnet": "10.0.12",
+  "messages": 5000,
+  "frameBytes": 1280,
+  "controlBytes": 96,
+  "results": [
+    {
+      "Transport": "stdio",
+      "StartupMs": 151.2926,
+      "Frame": {
+        "P50": 0.0252,
+        "P95": 0.0425,
+        "P99": 0.0532,
+        "Max": 0.8213
+      },
+      "Control": {
+        "P50": 0.0174,
+        "P95": 0.0336,
+        "P99": 0.0466,
+        "Max": 0.1749
+      },
+      "PipelinedFramesPerSecond": 145834.03212140393
+    },
+    {
+      "Transport": "pipe",
+      "StartupMs": 118.0816,
+      "Frame": {
+        "P50": 0.0291,
+        "P95": 0.0479,
+        "P99": 0.073,
+        "Max": 0.2155
+      },
+      "Control": {
+        "P50": 0.0292,
+        "P95": 0.0446,
+        "P99": 0.0623,
+        "Max": 0.529
+      },
+      "PipelinedFramesPerSecond": 51742.35927048448
+    },
+    {
+      "Transport": "http",
+      "StartupMs": 172.9564,
+      "Frame": {
+        "P50": 0.1322,
+        "P95": 0.184,
+        "P99": 0.2413,
+        "Max": 5.9023
+      },
+      "Control": {
+        "P50": 0.1051,
+        "P95": 0.1478,
+        "P99": 0.2061,
+        "Max": 0.6529
+      },
+      "PipelinedFramesPerSecond": 8172.405057084249
+    }
+  ]
+}
