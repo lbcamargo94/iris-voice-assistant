@@ -1,20 +1,25 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/IrisVoiceAssistant.AI.Contracts/IrisVoiceAssistant.AI.Contracts.csproj" />
+    <Project Path="src/IrisVoiceAssistant.Application/IrisVoiceAssistant.Application.csproj" />
     <Project Path="src/IrisVoiceAssistant.Audio/IrisVoiceAssistant.Audio.csproj" />
     <Project Path="src/IrisVoiceAssistant.Core/IrisVoiceAssistant.Core.csproj" />
+    <Project Path="src/IrisVoiceAssistant.Infrastructure/IrisVoiceAssistant.Infrastructure.csproj" />
     <Project Path="src/IrisVoiceAssistant.Platform.Windows/IrisVoiceAssistant.Platform.Windows.csproj" />
     <Project Path="src/IrisVoiceAssistant.WorkerHost/IrisVoiceAssistant.WorkerHost.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/IrisVoiceAssistant.AI.Contracts.Tests/IrisVoiceAssistant.AI.Contracts.Tests.csproj" />
+    <Project Path="tests/IrisVoiceAssistant.Application.Tests/IrisVoiceAssistant.Application.Tests.csproj" />
     <Project Path="tests/IrisVoiceAssistant.Audio.Tests/IrisVoiceAssistant.Audio.Tests.csproj" />
     <Project Path="tests/IrisVoiceAssistant.Core.Tests/IrisVoiceAssistant.Core.Tests.csproj" />
+    <Project Path="tests/IrisVoiceAssistant.Infrastructure.Tests/IrisVoiceAssistant.Infrastructure.Tests.csproj" />
     <Project Path="tests/IrisVoiceAssistant.Platform.Windows.Tests/IrisVoiceAssistant.Platform.Windows.Tests.csproj" />
     <Project Path="tests/IrisVoiceAssistant.WorkerHost.Tests/IrisVoiceAssistant.WorkerHost.Tests.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="tools/IrisVoiceAssistant.AudioDiagnostics/IrisVoiceAssistant.AudioDiagnostics.csproj" />
+    <Project Path="tools/IrisVoiceAssistant.LiveDemo/IrisVoiceAssistant.LiveDemo.csproj" />
     <Project Path="tools/IrisVoiceAssistant.TransportBench/IrisVoiceAssistant.TransportBench.csproj" />
   </Folder>
 </Solution>

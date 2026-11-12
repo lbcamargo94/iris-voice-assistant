@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>IrisVoiceAssistant.LiveDemo</RootNamespace>
+    <AssemblyName>iris-live</AssemblyName>
+  </PropertyGroup>
+
+  <!-- POC-001D deliverable: live EN transcription + PT-BR translation in the terminal. Visible, user-started
+       capture; no audio is stored; text goes to a local SQLite file that the 'delete' command removes. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\IrisVoiceAssistant.Application\IrisVoiceAssistant.Application.csproj" />
+    <ProjectReference Include="..\..\src\IrisVoiceAssistant.Platform.Windows\IrisVoiceAssistant.Platform.Windows.csproj" />
+  </ItemGroup>
+
+</Project>

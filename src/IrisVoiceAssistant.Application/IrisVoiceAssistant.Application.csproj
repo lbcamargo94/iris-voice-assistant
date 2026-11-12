@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>IrisVoiceAssistant.Application</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Use cases and orchestration (ARCHITECTURE.md): the live session wires capture, workers and persistence.
+       Platform-independent: capture sources are injected as factories. -->
+
+  <ItemGroup>
+    <ProjectReference Include="..\IrisVoiceAssistant.Audio\IrisVoiceAssistant.Audio.csproj" />
+    <ProjectReference Include="..\IrisVoiceAssistant.WorkerHost\IrisVoiceAssistant.WorkerHost.csproj" />
+    <ProjectReference Include="..\IrisVoiceAssistant.Infrastructure\IrisVoiceAssistant.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="IrisVoiceAssistant.Application.Tests" />
+  </ItemGroup>
+
+</Project>

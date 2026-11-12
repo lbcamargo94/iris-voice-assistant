@@ -65,6 +65,7 @@ class LocalAgreementStreamer:
         silence_keep_seconds: float = 3.0,
         agreement_interval_seconds: float = 0.0,
         partial_transcribe: Transcriber | None = None,
+        pause_commit_seconds: float = 0.0,
     ) -> None:
         """
         ``agreement_interval_seconds`` > 0 enables the hybrid mode: ``process()`` may be called more
@@ -72,7 +73,16 @@ class LocalAgreementStreamer:
         comparing hypotheses separated by at least this much new audio (e.g. 1 s), which keeps the
         accuracy of the slower cadence. ``partial_transcribe`` (e.g. greedy decoding) is used for the
         display-only passes; defaults to ``transcribe``.
+
+        ``pause_commit_seconds`` > 0 (policy v3, POC-001D): on an agreement pass, a tentative tail that ends
+        a sentence and is followed by at least this much audio without words is committed right away,
+        instead of waiting one more agreement interval for a second, matching hypothesis.
         """
+        if pause_commit_seconds < 0:
+            raise ValueError("pause_commit_seconds must be >= 0")
+        self._pause_commit_seconds = pause_commit_seconds
+        self.pause_commits = 0
+        """Number of times a sentence tail was committed on a pause (policy v3 metric)."""
         if not 0 < trim_seconds <= max_buffer_seconds:
             raise ValueError("Require 0 < trim_seconds <= max_buffer_seconds")
         if silence_keep_seconds <= 0:
@@ -105,6 +115,11 @@ class LocalAgreementStreamer:
     @property
     def committed(self) -> Sequence[TimedWord]:
         return self._committed
+
+    @property
+    def audio_seconds(self) -> float:
+        """All audio inserted so far, in seconds since the streamer started."""
+        return self._audio_seconds
 
     @property
     def buffer_seconds(self) -> float:
@@ -147,13 +162,30 @@ class LocalAgreementStreamer:
         self._committed.extend(newly_committed)
         self._previous = hypothesis
 
+        if self._pause_commit_seconds and hypothesis and _SENTENCE_END.search(hypothesis[-1].text.strip()):
+            buffer_end = self._buffer_offset + self.buffer_seconds
+            if buffer_end - hypothesis[-1].end >= self._pause_commit_seconds:
+                newly_committed.extend(hypothesis)
+                self._committed.extend(hypothesis)
+                self._previous = []
+                self.pause_commits += 1
+
         if heard_nothing_new:
             self._trim_silence()
         newly_committed += self._trim()
         return StreamingUpdate(committed=newly_committed, tentative=list(self._previous))
 
-    def finish(self) -> StreamingUpdate:
-        """End of stream: commits the remaining tentative words."""
+    def finish(self, transcribe_tail: bool = False) -> StreamingUpdate:
+        """End of stream: commits the remaining tentative words.
+
+        With ``transcribe_tail`` the buffer is transcribed once more (full beam) and that whole hypothesis is
+        committed, so audio heard only by display passes, or not processed yet, still produces words. The
+        live worker uses it when a segment closes (pause, device loss, end of session); the benchmark keeps
+        the default to stay comparable with POC-001A.
+        """
+        if transcribe_tail and len(self._buffer):
+            hypothesis = [w.shifted(self._buffer_offset) for w in self._transcribe(self._buffer, self._prompt())]
+            self._previous = self._drop_already_committed(hypothesis)
         remaining = self._previous
         self._committed.extend(remaining)
         self._previous = []

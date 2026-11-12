@@ -244,3 +244,32 @@ def test_rejects_non_float32_audio() -> None:
 
     with pytest.raises(ValueError):
         streamer.insert_audio(np.zeros(10, dtype=np.int16))
+
+
+def test_pause_commit_commits_a_finished_sentence_without_a_second_hypothesis() -> None:
+    # One pass is enough when the tail ends a sentence and is followed by >= 0.6 s without words.
+    streamer = make(ScriptedTranscriber([[(0.0, 0.2, " Ship"), (0.2, 0.35, " it.")]]), pause_commit_seconds=0.6)
+    streamer.insert_audio(second())
+
+    update = streamer.process()
+
+    assert texts(update.committed) == [" Ship", " it."]
+    assert update.tentative == []
+    assert streamer.pause_commits == 1
+
+
+def test_pause_commit_waits_when_the_sentence_is_unfinished_or_the_pause_is_short() -> None:
+    no_period = make(ScriptedTranscriber([[(0.0, 0.3, " Ship"), (0.3, 0.4, " it")]]), pause_commit_seconds=0.6)
+    no_period.insert_audio(second())
+    assert no_period.process().committed == []
+
+    short_pause = make(ScriptedTranscriber([[(0.0, 0.3, " Ship"), (0.3, 0.7, " it.")]]), pause_commit_seconds=0.6)
+    short_pause.insert_audio(second())  # only 0.3 s of audio after the period
+    assert short_pause.process().committed == []
+    assert short_pause.pause_commits == 0
+
+
+def test_pause_commit_is_off_by_default() -> None:
+    streamer = make(ScriptedTranscriber([[(0.0, 0.2, " Ship"), (0.2, 0.35, " it.")]]))
+    streamer.insert_audio(second())
+    assert streamer.process().committed == []

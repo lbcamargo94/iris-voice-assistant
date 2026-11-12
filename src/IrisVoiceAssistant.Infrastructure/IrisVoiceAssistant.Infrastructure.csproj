@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>IrisVoiceAssistant.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Local persistence (DATABASE.md): SQLite in WAL mode via Microsoft.Data.Sqlite (MIT, Microsoft; bundles the
+       SQLite engine through SQLitePCLRaw, Apache-2.0; SQLite itself is public domain). See docs/LICENSES.md. -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IrisVoiceAssistant.Core\IrisVoiceAssistant.Core.csproj" />
+  </ItemGroup>
+
+</Project>

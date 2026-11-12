@@ -226,6 +226,13 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
+ai = [
+    { name = "faster-whisper" },
+    { name = "nvidia-cublas-cu12", version = "12.9.2.10", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'win32'" },
+    { name = "nvidia-cublas-cu12", version = "12.9.3.13", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'win32'" },
+    { name = "nvidia-cudnn-cu12" },
+    { name = "sentencepiece" },
+]
 bench = [
     { name = "faster-whisper" },
     { name = "nvidia-cublas-cu12", version = "12.9.2.10", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'win32'" },
@@ -243,6 +250,12 @@ dev = [
 requires-dist = [{ name = "numpy", specifier = ">=2.0,<3" }]
 
 [package.metadata.requires-dev]
+ai = [
+    { name = "faster-whisper", specifier = ">=1.1,<2" },
+    { name = "nvidia-cublas-cu12", specifier = ">=12.4,<13" },
+    { name = "nvidia-cudnn-cu12", specifier = ">=9.1,<10" },
+    { name = "sentencepiece", specifier = ">=0.2,<0.3" },
+]
 bench = [
     { name = "faster-whisper", specifier = ">=1.1,<2" },
     { name = "nvidia-cublas-cu12", specifier = ">=12.4,<13" },

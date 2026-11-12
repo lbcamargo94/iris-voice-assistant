@@ -3,6 +3,10 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
+  <ItemGroup Label="Persistence">
+    <!-- SQLite for meetings, segments, translations and gaps (DATABASE.md). MIT, Microsoft. docs/LICENSES.md -->
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.15" />
+  </ItemGroup>
   <ItemGroup Label="Testing">
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />

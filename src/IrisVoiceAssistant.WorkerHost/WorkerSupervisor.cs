@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json.Nodes;
+using IrisVoiceAssistant.AI.Contracts;
 using IrisVoiceAssistant.Core.Audio;
 
 namespace IrisVoiceAssistant.WorkerHost;
@@ -30,6 +31,9 @@ public sealed class WorkerSupervisor : IAsyncDisposable
 
     /// <summary>Audio frames sent by the worker (e.g. synthesized speech).</summary>
     public event Action<AudioFrame>? AudioReceived;
+
+    /// <summary>Events the worker sends on its own (e.g. <c>status</c>, <c>stt.final</c>), on the reader thread, in order.</summary>
+    public event Action<ControlMessage>? ControlReceived;
 
     public string Name => _options.Name;
 
@@ -148,6 +152,7 @@ public sealed class WorkerSupervisor : IAsyncDisposable
             {
                 connection = await WorkerConnection.StartAsync(_options, stopping).ConfigureAwait(false);
                 connection.AudioReceived += frame => AudioReceived?.Invoke(frame);
+                connection.ControlReceived += message => ControlReceived?.Invoke(message);
                 lock (_gate)
                 {
                     _connection = connection;

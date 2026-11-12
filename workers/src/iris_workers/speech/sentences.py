@@ -38,6 +38,11 @@ class SentenceAssembler:
     def pending_words(self) -> int:
         return len(self._words)
 
+    @property
+    def pending(self) -> tuple[TimedWord, ...]:
+        """Committed words of the sentence still open (no terminal punctuation yet)."""
+        return tuple(self._words)
+
     def add(self, words: Iterable[TimedWord]) -> list[Sentence]:
         sentences = []
         for word in words:

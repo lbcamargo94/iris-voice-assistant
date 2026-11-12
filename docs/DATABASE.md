@@ -43,3 +43,12 @@ No P0 o banco não é criptografado; a proteção depende do perfil do usuário 
 ## Pesquisa
 
 P0: pesquisa textual simples em SQLite. Pesquisa semântica local e embeddings ficam para V1/V2 após avaliação de custo de memória e qualidade.
+
+## Implementação P0 (POC-001D, 2026-11-12)
+
+`IrisVoiceAssistant.Infrastructure.MeetingStore` usa SQLite via `Microsoft.Data.Sqlite` 10.0.15, num arquivo local (a demo usa `data/iris-live.db`, fora do git):
+- **Modo WAL com `synchronous=FULL`:** uma frase final gravada sobrevive à queda do app ou do sistema (RNF-006). O esquema é versionado por `PRAGMA user_version`, hoje na versão 1.
+- **Tabelas:** `meetings`, `sessions` (fontes de captura e modo de isolamento), `transcript_segments` (fluxo, `sequence` único por sessão e fluxo, posições em amostras, texto, `forced`), `translation_segments` (uma por camada, `Fast` ou `Refined`, preservando o original) e `audio_gaps` (atualizadas no lugar enquanto um episódio cresce).
+- **Ordem:** cada frase final é gravada antes de ser publicada (`LiveSession`), e a tradução é gravada antes de aparecer.
+- **Exclusão:** apagar uma reunião remove em cascata sessões, segmentos, traduções e lacunas (RF-DATA-004).
+- **Sem áudio:** o banco só guarda texto e tempos.

@@ -37,6 +37,9 @@ internal sealed class WorkerConnection : IAsyncDisposable
 
     public event Action<AudioFrame>? AudioReceived;
 
+    /// <summary>Control messages the worker sends on its own (not answers to a request), in arrival order.</summary>
+    public event Action<ControlMessage>? ControlReceived;
+
     public WorkerHello Hello { get; private set; } = null!;
 
     public int ProcessId => _process.Id;
@@ -273,8 +276,11 @@ internal sealed class WorkerConnection : IAsyncDisposable
             case "cancelled" when control.Id is long id && _pending.TryRemove(id, out TaskCompletionSource<JsonNode?>? pending):
                 pending.TrySetCanceled();
                 break;
+            case "result" or "error" or "cancelled":
+                break; // late answer to a cancelled request: ignored
             default:
-                break; // late answers to cancelled requests, or messages this host does not use
+                ControlReceived?.Invoke(control); // worker-initiated events (e.g. stt.final, status)
+                break;
         }
     }
 

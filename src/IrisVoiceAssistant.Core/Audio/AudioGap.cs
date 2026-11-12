@@ -14,6 +14,12 @@ public enum AudioGapCause
 
     /// <summary>The user paused capture. Not a loss, but still shown on the timeline.</summary>
     Paused = 4,
+
+    /// <summary>
+    /// Captured audio that could not be re-sent to the speech worker after it restarted, because it had already
+    /// left the replay buffer (ADR-014 decision 5). Counts as loss.
+    /// </summary>
+    WorkerRecovery = 5,
 }
 
 /// <summary>
@@ -34,5 +40,5 @@ public sealed record AudioGap(AudioStreamKind Stream, long StartPosition, long L
     public TimeSpan Duration => CanonicalAudioFormat.ToTimeSpan(LengthSamples);
 
     /// <summary>True when captured audio was discarded (as opposed to never captured).</summary>
-    public bool IsLoss => Cause == AudioGapCause.Overflow;
+    public bool IsLoss => Cause is AudioGapCause.Overflow or AudioGapCause.WorkerRecovery;
 }

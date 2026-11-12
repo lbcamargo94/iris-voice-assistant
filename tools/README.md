@@ -25,3 +25,21 @@ Compara transportes entre o app e um worker de eco Python (`iris_workers.bench.t
 dotnet build tools\IrisVoiceAssistant.TransportBench -c Release
 tools\IrisVoiceAssistant.TransportBench\bin\Release\net10.0-windows\iris-transport-bench.exe 5000
 ```
+
+## iris-live (POC-001D): demo ao vivo
+
+Transcreve em inglês e traduz para PT-BR, ao vivo, o áudio do sistema (Participantes). Com `--mic`, transcreve também o seu microfone (Você), sem traduzir. A cada frase mostra a latência desde o fim da fala; ao parar, mostra o resumo com latências p50/p95, lacunas e conciliação.
+
+```powershell
+cd workers; $env:UV_CACHE_DIR = "..\.cache\uv"; uv sync --group ai; cd ..   # uma vez
+# modelos: benchmarks\run-stt.ps1 -AllowDownload (Whisper) e benchmarks\fetch-translation-models.ps1
+dotnet build tools\IrisVoiceAssistant.LiveDemo -c Release
+$live = "tools\IrisVoiceAssistant.LiveDemo\bin\Release\net10.0-windows\iris-live.exe"
+& $live                 # q para parar, p para pausar
+& $live --mic           # também o microfone
+& $live delete --yes    # apaga o texto salvo (data\iris-live.db)
+```
+
+- **Na abertura**, mostra um aviso de consentimento.
+- **Nenhum áudio é gravado.** O texto fica em `data\iris-live.db`, fora do git.
+- **Primeira partida mais lenta:** carregar os modelos leva até ~1 minuto lendo do HD. Isso inclui a conferência do SHA-256, que só é refeita quando o arquivo muda.

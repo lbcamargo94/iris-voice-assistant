@@ -111,6 +111,7 @@ def run_streams(model, audios: list, args) -> list[tuple[list[TimedWord], dict[s
                     trim_seconds=args.trim_seconds,
                     max_buffer_seconds=args.max_buffer_seconds,
                     agreement_interval_seconds=args.agreement_interval,
+                    pause_commit_seconds=args.pause_commit,
                     partial_transcribe=partial,
                 ),
                 "first_seen": {},
@@ -185,6 +186,7 @@ def run_streams(model, audios: list, args) -> list[tuple[list[TimedWord], dict[s
             "words_committed_at_finish": len(final.committed),
             "silence_trimmed_seconds": round(streamer.silence_trimmed_seconds, 1),
             "forced_trims": streamer.forced_trims,
+            "pause_commits": streamer.pause_commits,
             "forced_trim_ranges": [[round(a, 2), round(b, 2)] for a, b in streamer.forced_trim_ranges],
         }
         results.append((list(streamer.committed), metrics))
@@ -203,6 +205,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--chunk-seconds", type=float, default=1.0)
     parser.add_argument("--trim-seconds", type=float, default=15.0)
     parser.add_argument("--max-buffer-seconds", type=float, default=30.0)
+    parser.add_argument("--pause-commit", type=float, default=0.0, metavar="SECONDS",
+                        help="policy v3: commit a sentence tail followed by this much silence (0 = off)")
     parser.add_argument("--agreement-interval", type=float, default=0.0,
                         help="hybrid mode: commit only across >= N s of new audio (0 = every chunk)")
     parser.add_argument("--partial-beam-size", type=int, default=None, help="beam for display-only passes")
@@ -289,6 +293,8 @@ def main(argv: list[str] | None = None) -> int:
         suffix += f"_skip{args.skip_partials_when_late:g}"
     if args.concurrent:
         suffix += "_concurrent"
+    if args.pause_commit:
+        suffix += f"_pc{args.pause_commit:g}"
     out_file = args.out / f"{stamp}_{args.model}_{args.compute_type}_b{args.beam_size}{suffix}.json"
     out_file.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"report: {out_file}")

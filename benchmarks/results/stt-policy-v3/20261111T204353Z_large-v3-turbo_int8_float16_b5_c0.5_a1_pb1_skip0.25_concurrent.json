@@ -1,0 +1,140 @@
+{
+  "benchmark": "stt",
+  "created_utc": "2026-11-11T20:40:20+00:00",
+  "environment": {
+    "python_version": "3.12.16",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "machine": "AMD64",
+    "processor": "AMD64 Family 25 Model 33 Stepping 2, AuthenticAMD",
+    "gpus": [
+      {
+        "name": "NVIDIA GeForce RTX 4060 Ti",
+        "memory_total_mib": 8188,
+        "driver_version": "616.92"
+      }
+    ]
+  },
+  "versions": {
+    "faster_whisper": "1.2.1",
+    "ctranslate2": "4.8.5"
+  },
+  "model": {
+    "name": "large-v3-turbo",
+    "repo": "mobiuslabsgmbh/faster-whisper-large-v3-turbo",
+    "revision": "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf",
+    "model_bin_sha256": "e76620f83d5f5b69efd3d87e3dc180c1bd21df9fbebacfd4335e5e1efcc018da",
+    "pinned": true
+  },
+  "config": {
+    "model": "large-v3-turbo",
+    "compute_type": "int8_float16",
+    "device": "cuda",
+    "beam_size": 5,
+    "meetings": [
+      "IS1009a",
+      "ES2004a"
+    ],
+    "max_seconds": 300.0,
+    "mode": "streaming",
+    "chunk_seconds": 0.5,
+    "trim_seconds": 15.0,
+    "max_buffer_seconds": 30.0,
+    "pause_commit": 0.0,
+    "agreement_interval": 1.0,
+    "partial_beam_size": 1,
+    "skip_partials_when_late": 0.25,
+    "concurrent": true,
+    "allow_download": false,
+    "dump_text": false
+  },
+  "normalization": "lowercase, no punctuation, hyphens split, fillers removed, numbers NOT normalized",
+  "meetings": [
+    {
+      "meeting": "IS1009a",
+      "seconds": 300.0,
+      "reference_words": 454,
+      "streaming": {
+        "chunk_seconds": 0.5,
+        "agreement_interval_seconds": 1.0,
+        "partial_beam_size": 1,
+        "concurrent_streams": 2,
+        "steps": 580,
+        "skipped_display_passes": 20,
+        "rtf": 0.4422,
+        "step_compute_seconds": {
+          "p50": 0.249,
+          "p95": 0.382,
+          "p99": 0.606
+        },
+        "commit_latency_seconds": {
+          "p50": 1.915,
+          "p95": 3.131,
+          "p99": 4.663
+        },
+        "first_seen_latency_seconds": {
+          "p50": 0.578,
+          "p95": 1.43,
+          "p99": 3.523
+        },
+        "lag_seconds_max": 5.655,
+        "lag_seconds_final": 0.241,
+        "words_committed_at_finish": 0,
+        "silence_trimmed_seconds": 134.5,
+        "forced_trims": 0,
+        "pause_commits": 0,
+        "forced_trim_ranges": [],
+        "wer": 0.185,
+        "reference_words_in_forced_trims": 0,
+        "committed_words_in_forced_trims": 0
+      }
+    },
+    {
+      "meeting": "ES2004a",
+      "seconds": 300.0,
+      "reference_words": 381,
+      "streaming": {
+        "chunk_seconds": 0.5,
+        "agreement_interval_seconds": 1.0,
+        "partial_beam_size": 1,
+        "concurrent_streams": 2,
+        "steps": 431,
+        "skipped_display_passes": 169,
+        "rtf": 0.2531,
+        "step_compute_seconds": {
+          "p50": 0.213,
+          "p95": 0.369,
+          "p99": 0.404
+        },
+        "commit_latency_seconds": {
+          "p50": 2.191,
+          "p95": 6.623,
+          "p99": 7.649
+        },
+        "first_seen_latency_seconds": {
+          "p50": 1.017,
+          "p95": 3.384,
+          "p99": 6.52
+        },
+        "lag_seconds_max": 5.939,
+        "lag_seconds_final": 0.248,
+        "words_committed_at_finish": 0,
+        "silence_trimmed_seconds": 189.3,
+        "forced_trims": 0,
+        "pause_commits": 0,
+        "forced_trim_ranges": [],
+        "wer": 0.1759,
+        "reference_words_in_forced_trims": 0,
+        "committed_words_in_forced_trims": 0
+      }
+    }
+  ],
+  "model_load_seconds": 4.23,
+  "resources": {
+    "cpu_percent_avg": 6.3,
+    "cpu_percent_max": 25.4,
+    "rss_mib_max": 1800.0,
+    "vram_used_mib_baseline": 2323.2,
+    "vram_used_mib_max": 3785.3,
+    "samples": 818
+  }
+}

@@ -75,6 +75,14 @@ O teste `workers/tests/test_manifests.py` confere o formato de todos os checksum
 | nvidia-ml-py | 13.615.71 | bench | Amostragem de VRAM (NVML) | BSD-3-Clause | |
 | sentencepiece | 0.2.3 | bench | Tokenização Opus-MT/Argos | Apache-2.0 | Mantido pelo Google; wheel de ~1,6 MB. O pacote `argostranslate` **não** é usado, porque puxaria stanza (PyTorch) e spaCy |
 
+### Pacotes .NET (`Directory.Packages.props`)
+
+| Pacote | Versão | Projeto | Função | Licença | Observação |
+| --- | --- | --- | --- | --- | --- |
+| Microsoft.Data.Sqlite (+ .Core) | 10.0.15 | Infrastructure | Banco local SQLite (DATABASE.md) | MIT | Mantido pela Microsoft (EF Core). Aprovado pelo usuário em 2026-11-12 |
+| SQLitePCLRaw (bundle_e_sqlite3, core, provider, lib.e_sqlite3) | 2.1.13 | Infrastructure (transitivo) | Motor SQLite nativo empacotado | Apache-2.0; o SQLite em si é de domínio público | Inclui a DLL `e_sqlite3` |
+| xunit, xunit.runner.visualstudio, Microsoft.NET.Test.Sdk, coverlet.collector | ver props | testes | Testes | Apache-2.0 / MIT | Só nos testes, não distribuídos |
+
 `huggingface-hub` é usado somente para downloads explícitos (`--allow-download`), com `HF_HUB_DISABLE_TELEMETRY=1`.
 
 ### Modelos, runtimes e dados

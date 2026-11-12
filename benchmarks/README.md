@@ -100,6 +100,17 @@ Zero cortes forçados e zero palavras perdidas em todas as configurações. "Pul
 
 **Padrão escolhido (ADR-008, refinamento):** híbrido 0,5 s / 1 s, exibição com beam 1 e pulada quando atrasada, confirmação beam 5. Atende a meta de 1ª exibição do RNF-015 também no p95 com dois fluxos no pior caso.
 
+### Política v3: confirmação na pausa (POC-001D, 2026-11-12)
+
+Opção `--pause-commit 0.6` do `bench.stt`: a cauda provisória que termina uma frase e vem seguida de ≥ 0,6 s sem palavras é confirmada sem esperar a segunda hipótese. Com dois fluxos ao mesmo tempo e duas rodadas de cada (`results/stt-policy-v3/`, arquivos de 2026-11-11 às 20h):
+
+| Política | Confirmação p95 (IS / ES) | Exibição p95 (IS / ES) | WER (IS / ES) |
+| --- | --- | --- | --- |
+| v2 | 3,12 / 4,07 s | 1,37 / 2,04 s | 0,185 / 0,176 |
+| **v3 (padrão do worker)** | **2,63–2,66 / 2,89–3,01 s** | 1,21 / 1,92–2,16 s | 0,187–0,189 / 0,181 |
+
+A primeira rodada da v2 (atraso máximo de 5,9 s) foi descartada por interferência na GPU. Decisão e demo ao vivo: ADR-008, refinamento de 2026-11-12.
+
 ### Pendências do passo 2
 
 - Parakeet via sherpa-onnx (concorrente, ADR-008) ainda não medido.
