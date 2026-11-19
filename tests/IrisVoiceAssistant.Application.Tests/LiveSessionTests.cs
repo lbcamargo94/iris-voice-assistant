@@ -135,6 +135,68 @@ public sealed class LiveSessionTests : IDisposable
     }
 
     [PythonFact]
+    public async Task Vocabulary_is_learned_activated_pushed_to_workers_and_reused_in_the_next_session()
+    {
+        string db = Path.Combine(_dir, "iris.db");
+        CaptureSourceSpec[] system = [new(AudioStreamKind.SystemAudio, () => new Fakes.Source(AudioStreamKind.SystemAudio))];
+        var learned = new ConcurrentQueue<VocabularyTerm>();
+        await using (var first = new LiveSession(new LiveSessionOptions
+        {
+            DatabasePath = db,
+            Speech = Fakes.Worker("speech"),
+            Translation = Fakes.Worker("translation"),
+        }))
+        {
+            first.TermsLearned += terms => terms.ToList().ForEach(learned.Enqueue);
+            await first.StartAsync(system);
+            await Task.Delay(TimeSpan.FromSeconds(4.5)); // ~4 finals, each mentioning "Francina"
+            await first.StopAsync();
+            Assert.Equal("Francina", Assert.Single(learned).Term); // activated on the third sentence, once
+            Assert.True(first.VocabularyPushes >= 1);
+            Assert.Equal("Francina", Assert.Single(first.ActiveVocabulary).Term);
+        }
+
+        await using var second = new LiveSession(new LiveSessionOptions
+        {
+            DatabasePath = db,
+            Speech = Fakes.Worker("speech"),
+            Translation = Fakes.Worker("translation"),
+        });
+        await second.StartAsync(system);
+        Assert.Equal("Francina", Assert.Single(second.ActiveVocabulary).Term); // carried over between sessions
+        Assert.True(second.VocabularyPushes >= 1);                              // and sent before capture
+        await Task.Delay(TimeSpan.FromSeconds(1.5));                            // one sentence in this session too
+        await second.StopAsync();
+
+        await using MeetingStore store = await MeetingStore.OpenAsync(db);
+        VocabularyTerm term = Assert.Single(await store.ListVocabularyAsync());
+        Assert.Equal(2, term.Sessions);
+    }
+
+    [PythonFact]
+    public async Task Learning_can_be_turned_off()
+    {
+        string db = Path.Combine(_dir, "iris.db");
+        await using (var session = new LiveSession(new LiveSessionOptions
+        {
+            DatabasePath = db,
+            Speech = Fakes.Worker("speech"),
+            Translation = Fakes.Worker("translation"),
+            LearnVocabulary = false,
+        }))
+        {
+            await session.StartAsync([new(AudioStreamKind.SystemAudio, () => new Fakes.Source(AudioStreamKind.SystemAudio))]);
+            await Task.Delay(TimeSpan.FromSeconds(3.5));
+            LiveSessionSummary summary = await session.StopAsync();
+            Assert.True(summary.Finals >= 2);
+            Assert.Equal(0, session.VocabularyPushes);
+        }
+
+        await using MeetingStore store = await MeetingStore.OpenAsync(db);
+        Assert.Empty(await store.ListVocabularyAsync());
+    }
+
+    [PythonFact]
     public async Task A_speech_worker_crash_is_recovered_by_replay_without_losing_or_duplicating_finals()
     {
         string marker = Path.Combine(_dir, "crashed.marker");

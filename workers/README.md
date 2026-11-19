@@ -27,6 +27,7 @@ uv run python -m iris_workers.environment   # relatório de ambiente (sem conte�
 | `iris_workers.protocol` | Iris Worker Protocol v1: codificação e `WorkerServer` (stdout reservado ao protocolo, logs no stderr) |
 | `iris_workers.testing.contract_worker` | Worker de teste com modos de falha, usado pelos testes de contrato do WorkerHost |
 | `iris_workers.workers.speech` (+ `speech_engine`) | Worker de STT (POC-001D): faster-whisper large-v3-turbo, política v3, dois fluxos; eventos `stt.partial`, `stt.final` e `stt.ack` |
+| `iris_workers.speech.vocabulary` | Detecta palavras raras (2 ou mais tokens no vocabulário do Whisper), nomes e siglas em cada frase final, para o aprendizado de vocabulário (ADR-015) |
 | `iris_workers.workers.translation` | Worker de tradução rápida (POC-001D): Opus-MT `>>pob<<` com glossário, CPU int8 com 4 threads |
 | `iris_workers.testing.fake_pipeline_workers` | STT e tradução falsos, sem modelo, para os testes da sessão ao vivo no CI |
 | `speech`, `translation`, `llm`, `tts` | Adaptadores e benchmarks do POC-001A; os workers de LLM e voz entram no POC-001E |

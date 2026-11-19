@@ -66,7 +66,7 @@ def resolve_model(name: str, models_dir: Path, allow_download: bool) -> tuple[Pa
     return path, info
 
 
-def make_transcriber(model, beam_size: int, vad: bool):
+def make_transcriber(model, beam_size: int, vad: bool, hotwords: str | None = None):
     def transcribe(audio, prompt: str) -> list[TimedWord]:
         segments, _ = model.transcribe(
             audio,
@@ -76,6 +76,7 @@ def make_transcriber(model, beam_size: int, vad: bool):
             condition_on_previous_text=False,
             initial_prompt=prompt or None,
             vad_filter=vad,
+            hotwords=hotwords or None,
         )
         return [TimedWord(w.start, w.end, w.word) for s in segments for w in (s.words or [])]
 
@@ -97,9 +98,10 @@ def run_streams(model, audios: list, args) -> list[tuple[list[TimedWord], dict[s
     With several audios (``--concurrent``) each chunk tick processes every stream in turn, as a single
     STT worker serving system audio and microphone would, so latencies include the queueing.
     """
-    full = make_transcriber(model, args.beam_size, vad=True)
+    hotwords = getattr(args, "hotwords", None)
+    full = make_transcriber(model, args.beam_size, vad=True, hotwords=hotwords)
     partial = None if args.partial_beam_size in (None, args.beam_size) else make_transcriber(
-        model, args.partial_beam_size, vad=True
+        model, args.partial_beam_size, vad=True, hotwords=hotwords
     )
     states = []
     for audio in audios:

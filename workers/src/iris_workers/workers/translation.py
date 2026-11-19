@@ -49,9 +49,23 @@ def main(argv: list[str] | None = None) -> int:
                 "protected_terms": result.protected_terms, "glossary_fallbacks": result.glossary_fallbacks}
 
     def status(params: dict[str, Any], cancel: threading.Event) -> Any:
-        return {"ready": ready.is_set(), "device": args.device, "threads": args.threads}
+        return {"ready": ready.is_set(), "device": args.device, "threads": args.threads,
+                "learned_terms": holder.get("learned", 0)}
 
-    server = WorkerServer("translation", VERSION, {"translate": translate, "status": status})
+    def set_protected_terms(params: dict[str, Any], cancel: threading.Event) -> Any:
+        """Learned names and acronyms stay in English (ADR-015), on top of the default technical glossary."""
+        if not ready.is_set():
+            raise NotReady("translation model still loading")
+        from iris_workers.translation.glossary import DEFAULT_TECH_TERMS, GlossaryEntry, TermProtector
+
+        known = {e.term.lower() for e in DEFAULT_TECH_TERMS}
+        learned = [GlossaryEntry(str(t), case_sensitive=True) for t in params.get("terms", []) if str(t).lower() not in known]
+        holder["translator"].set_protector(TermProtector([*DEFAULT_TECH_TERMS, *learned]))
+        holder["learned"] = len(learned)
+        return {"protected": len(learned)}
+
+    server = WorkerServer("translation", VERSION, {"translate": translate, "status": status,
+                                                   "set_protected_terms": set_protected_terms})
 
     def load() -> dict[str, Any]:
         from iris_workers.cuda_runtime import register_cuda_dll_directories

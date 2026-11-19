@@ -18,6 +18,7 @@ ADRs registram decisões importantes, contexto, alternativas, consequências e e
 - [ADR-012 — Convenções da plataforma .NET e Python](ADR-012-dotnet-platform-conventions.md)
 - [ADR-013 — Detecção de perguntas dirigidas ao usuário](ADR-013-directed-question-detection.md)
 - [ADR-014 — Transporte dos workers: stdio com o Iris Worker Protocol v1](ADR-014-worker-transport-stdio.md)
+- [ADR-015 — Aprendizado local de vocabulário entre sessões](ADR-015-local-vocabulary-learning.md)
 
 ## Pendentes
 

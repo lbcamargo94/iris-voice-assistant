@@ -157,3 +157,16 @@ def test_backlog_beyond_the_limit_is_skipped_and_reported():
     stats = engine.stats()[str(SYSTEM_AUDIO)]
     assert stats["queued_seconds"] <= 1.0
     assert stats["backlog_skipped_seconds"] >= 2.0 - 0.02
+
+
+def test_finals_carry_the_vocabulary_terms_of_their_sentence():
+    events: list[dict] = []
+    recognizer = ScriptRecognizer([(0.1, 0.4, " Meet"), (0.4, 0.9, " Francina.")])
+    engine = SpeechEngine(recognizer, recognizer, events.append, SpeechConfig(),
+                          extract_terms=lambda text: [{"text": "Francina", "kind": "name"}] if "Francina" in text else [])
+    for pos, samples in frames(0, 3.0):
+        engine.add_frame(SYSTEM_AUDIO, pos, samples)
+        run(engine)
+    final = finals(events)[0]
+    assert final["text"] == "Meet Francina."
+    assert final["terms"] == [{"text": "Francina", "kind": "name"}]

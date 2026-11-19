@@ -26,6 +26,7 @@ import numpy as np
 from iris_workers.bench import manifests
 from iris_workers.protocol import AudioFrame, WorkerServer
 from iris_workers.speech.local_agreement import TimedWord
+from iris_workers.speech.vocabulary import extract_terms
 from iris_workers.workers.common import REPO_ROOT, load_in_background, log, verify_sha256
 from iris_workers.workers.speech_engine import SpeechConfig, SpeechEngine
 
@@ -62,20 +63,33 @@ def main(argv: list[str] | None = None) -> int:
         def transcribe(audio: np.ndarray, prompt: str) -> list[TimedWord]:
             segments, _ = holder["model"].transcribe(
                 audio, language="en", beam_size=beam, word_timestamps=True,
-                condition_on_previous_text=False, initial_prompt=prompt or None, vad_filter=True)
+                condition_on_previous_text=False, initial_prompt=prompt or None, vad_filter=True,
+                hotwords=holder.get("hotwords") or None)
             return [TimedWord(w.start, w.end, w.word) for s in segments for w in (s.words or [])]
         return transcribe
 
+    def terms(text: str) -> list[dict[str, str]]:
+        tokenizer = holder["model"].hf_tokenizer
+        count = lambda word: len(tokenizer.encode(" " + word, add_special_tokens=False).ids)  # noqa: E731
+        return [{"text": t.text, "kind": t.kind} for t in extract_terms(text, count)]
+
     server: WorkerServer
     engine = SpeechEngine(transcriber(args.beam_size), transcriber(1), lambda event: server.send(event),
-                          SpeechConfig(pause_commit_seconds=args.pause_commit))
+                          SpeechConfig(pause_commit_seconds=args.pause_commit), extract_terms=terms)
 
     def on_audio(frame: AudioFrame) -> None:
         engine.add_frame(frame.stream, frame.position, np.frombuffer(frame.samples, dtype="<f4").copy())
 
     def status(params: dict[str, Any], cancel: threading.Event) -> Any:
         return {"ready": ready.is_set(), "model": args.model, "compute_type": args.compute_type,
+                "hotwords": len((holder.get("hotwords") or "").split()),
                 "pause_commit_seconds": args.pause_commit, "streams": engine.stats(), "finals": engine.finals}
+
+    def set_hotwords(params: dict[str, Any], cancel: threading.Event) -> Any:
+        """Learned vocabulary (ADR-015) as faster-whisper hotwords: a hint, never a constraint."""
+        words = [str(w) for w in params.get("terms", [])][:40]
+        holder["hotwords"] = " ".join(words)
+        return {"hotwords": len(words)}
 
     def end_segment(params: dict[str, Any], cancel: threading.Event) -> Any:
         engine.end_segment(int(params["stream"]))
@@ -91,7 +105,8 @@ def main(argv: list[str] | None = None) -> int:
                 break
         return {"finals": engine.finals - before}
 
-    server = WorkerServer("speech", VERSION, {"status": status, "end_segment": end_segment, "flush": flush},
+    server = WorkerServer("speech", VERSION, {"status": status, "end_segment": end_segment, "flush": flush,
+                                              "set_hotwords": set_hotwords},
                           on_audio=on_audio)
 
     def load() -> dict[str, Any]:

@@ -4,7 +4,8 @@
     python -I -m iris_workers.testing.fake_pipeline_workers translation
 
 The fake speech worker emits one ``stt.final`` per second of contiguous audio of each stream, named after the
-second it covers (``s1-0003`` = system stream, fourth second), followed by ``stt.ack`` at its end. With
+second it covers (``s1-0003 with Francina`` = system stream, fourth second; "Francina" is reported as a
+vocabulary term so learning can be tested), followed by ``stt.ack`` at its end. With
 ``--crash-at`` it exits (code 5) once, after receiving that many seconds of system audio; the marker file makes
 the restarted process keep running. The fake translation worker answers ``translate`` with ``"PT: " + text``.
 """
@@ -41,13 +42,22 @@ def speech(args: argparse.Namespace) -> int:
         while s["expected"] >= s["block_start"] + RATE:
             start, end = s["block_start"], s["block_start"] + RATE
             server.send({"type": "stt.partial", "stream": frame.stream, "text": "...", "revision": end})
-            server.send({"type": "stt.final", "stream": frame.stream, "text": f"s{frame.stream}-{start // RATE:04d}",
-                         "start": start, "end": end, "words": 1, "forced": False})
+            server.send({"type": "stt.final", "stream": frame.stream, "text": f"s{frame.stream}-{start // RATE:04d} with Francina",
+                         "start": start, "end": end, "words": 3, "forced": False,
+                         "terms": [{"text": "Francina", "kind": "name"}]})
             server.send({"type": "stt.ack", "stream": frame.stream, "replay_from": end})
             s["block_start"] = end
 
+    hotwords: list[str] = []
+
+    def set_hotwords(params: dict[str, Any], cancel: threading.Event) -> Any:
+        hotwords[:] = [str(t) for t in params.get("terms", [])]
+        return {"hotwords": len(hotwords)}
+
     server = WorkerServer("speech", "fake", {"flush": lambda p, c: {"finals": 0}, "end_segment": lambda p, c: True,
-                                             "status": lambda p, c: {"ready": True}}, on_audio=on_audio)
+                                             "set_hotwords": set_hotwords,
+                                             "status": lambda p, c: {"ready": True, "hotwords": hotwords}},
+                          on_audio=on_audio)
 
     def announce() -> None:
         time.sleep(0.2)  # after hello, like the real worker's background model load
@@ -61,7 +71,8 @@ def translation(args: argparse.Namespace) -> int:
     def translate(params: dict[str, Any], cancel: threading.Event) -> Any:
         return {"text": "PT: " + str(params.get("text", "")), "seconds": 0.0, "protected_terms": 0, "glossary_fallbacks": 0}
 
-    server = WorkerServer("translation", "fake", {"translate": translate, "status": lambda p, c: {"ready": True}})
+    server = WorkerServer("translation", "fake", {"translate": translate, "status": lambda p, c: {"ready": True},
+                                                  "set_protected_terms": lambda p, c: {"protected": len(p.get("terms", []))}})
     threading.Thread(target=lambda: (time.sleep(0.2), server.send({"type": "status", "state": "ready"})), daemon=True).start()
     return server.serve()
 

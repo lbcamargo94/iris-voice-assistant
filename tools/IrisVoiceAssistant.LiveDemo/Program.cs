@@ -13,13 +13,15 @@ DemoOptions options = DemoOptions.Parse(args);
 return options.Command switch
 {
     "delete" => Demo.Delete(options),
+    "vocab" => await Demo.VocabularyAsync(options),
     "help" => Demo.Help(),
     _ => await Demo.RunAsync(options),
 };
 
 namespace IrisVoiceAssistant.LiveDemo
 {
-    internal sealed record DemoOptions(string Command, bool Microphone, bool TranslateMicrophone, double Minutes, string Database, bool Yes)
+    internal sealed record DemoOptions(string Command, bool Microphone, bool TranslateMicrophone, double Minutes, string Database, bool Yes,
+        bool NoLearning = false, string? VocabAction = null, string? VocabTerm = null)
     {
         public static DemoOptions Parse(string[] args)
         {
@@ -30,6 +32,10 @@ namespace IrisVoiceAssistant.LiveDemo
                 options = args[i] switch
                 {
                     "delete" or "help" => options with { Command = args[i] },
+                    "vocab" => options with { Command = "vocab" },
+                    "forget" when options.Command == "vocab" => options with { VocabAction = "forget", VocabTerm = Next() },
+                    "clear" when options.Command == "vocab" => options with { VocabAction = "clear" },
+                    "--no-learning" => options with { NoLearning = true },
                     "--mic" => options with { Microphone = true },
                     "--translate-mic" => options with { Microphone = true, TranslateMicrophone = true },
                     "--minutes" => options with { Minutes = double.Parse(Next(), CultureInfo.InvariantCulture) },
@@ -56,6 +62,9 @@ namespace IrisVoiceAssistant.LiveDemo
                     --mic            também transcreve o seu microfone (Você), sem traduzir
                     --translate-mic  também traduz o microfone
                     --minutes N      para sozinho depois de N minutos (senão: tecla q)
+                    --no-learning    não aprende vocabulário nesta sessão (ADR-015)
+                iris-live vocab [forget TERMO | clear --yes]
+                    Lista o vocabulário aprendido (nomes, siglas, palavras raras), esquece um termo ou apaga tudo.
                 iris-live delete [--db PATH] --yes
                     Apaga o banco local com o texto das sessões da demo.
 
@@ -95,7 +104,7 @@ namespace IrisVoiceAssistant.LiveDemo
             Console.WriteLine("Aviso: esta sessão captura o áudio do sistema" + (options.Microphone ? " e o seu microfone" : "") +
                               ". Tenha autorização dos participantes. Nenhum áudio é gravado; o texto fica em:");
             Console.WriteLine($"  {options.Database}   (apagar: iris-live delete --yes)");
-            Console.WriteLine("Teclas: q = parar, p = pausar/retomar.\n");
+            Console.WriteLine("Teclas: q (ou Ctrl+C) = parar com resumo, p = pausar/retomar.\n");
 
             AudioDeviceInfo? output = new WasapiDeviceEnumerator().GetDefault(AudioDeviceFlow.Render);
             if (output?.MayEchoIntoMicrophone == true && options.Microphone)
@@ -132,6 +141,7 @@ namespace IrisVoiceAssistant.LiveDemo
                 Speech = Worker("speech"),
                 Translation = Worker("translation"),
                 TranslateMicrophone = options.TranslateMicrophone,
+                LearnVocabulary = !options.NoLearning,
                 Title = $"Demo {DateTime.Now:yyyy-MM-dd HH:mm}",
             });
             session.Status += message => Write($"· {message}", ConsoleColor.DarkGray);
@@ -139,6 +149,8 @@ namespace IrisVoiceAssistant.LiveDemo
             session.SegmentFinalized += (segment, latency) =>
                 Write($"[{Label(segment.Stream)} {Clock(segment.Start)}] {segment.Text}  ({latency.TotalSeconds:F1} s{(segment.Forced ? ", cortada" : "")})", ConsoleColor.White);
             session.SegmentTranslated += (segment, text, _) => Write($"{new string(' ', Label(segment.Stream).Length + 9)}{text}", ConsoleColor.Cyan);
+            session.TermsLearned += terms =>
+                Write($"· aprendi: {string.Join(", ", terms.Select(t => $"{t.Term} ({KindLabel(t.Kind)})"))} — agora ajuda o reconhecimento{(terms.Any(t => t.KeepInEnglish) ? " e fica em inglês na tradução" : "")}", ConsoleColor.Magenta);
             session.GapRecorded += gap => Write($"· lacuna {gap.Cause} em {Clock(gap.Start)} ({gap.Duration.TotalSeconds:F1} s){(gap.IsLoss ? " — áudio perdido" : "")}", ConsoleColor.Yellow);
             session.WorkerStateChanged += (worker, state, reason) =>
             {
@@ -174,7 +186,17 @@ namespace IrisVoiceAssistant.LiveDemo
             Write("Pronto. Toque um vídeo ou entre numa reunião em inglês.\n", ConsoleColor.Green);
             var watch = System.Diagnostics.Stopwatch.StartNew();
             bool paused = false;
-            while (options.Minutes <= 0 || watch.Elapsed.TotalMinutes < options.Minutes)
+            int interrupts = 0;
+            Console.CancelKeyPress += (_, e) =>
+            {
+                // First Ctrl+C stops like 'q' (summary, last sentences finalized); a second one exits at once.
+                e.Cancel = Interlocked.Increment(ref interrupts) == 1;
+                if (e.Cancel)
+                {
+                    Write("· Ctrl+C: parando com o resumo (Ctrl+C de novo encerra na hora)...", ConsoleColor.DarkGray);
+                }
+            };
+            while ((options.Minutes <= 0 || watch.Elapsed.TotalMinutes < options.Minutes) && Volatile.Read(ref interrupts) == 0)
             {
                 await Task.Delay(100);
                 if (Console.IsInputRedirected || !Console.KeyAvailable)
@@ -220,6 +242,60 @@ namespace IrisVoiceAssistant.LiveDemo
             Console.WriteLine($"Texto salvo em {session.DatabasePath}");
             return summary.Counters.All(c => c.Reconciles) ? 0 : 1;
         }
+
+        public static async Task<int> VocabularyAsync(DemoOptions options)
+        {
+            if (!File.Exists(options.Database))
+            {
+                Console.WriteLine("Nenhum vocabulário aprendido ainda (o banco da demo não existe).");
+                return 0;
+            }
+
+            await using var store = await Infrastructure.MeetingStore.OpenAsync(options.Database);
+            switch (options.VocabAction)
+            {
+                case "forget":
+                    bool found = await store.ForgetTermAsync(options.VocabTerm!);
+                    Console.WriteLine(found ? $"esquecido: {options.VocabTerm} (não será aprendido de novo)" : $"termo não encontrado: {options.VocabTerm}");
+                    return found ? 0 : 1;
+                case "clear":
+                    if (!options.Yes)
+                    {
+                        Console.WriteLine("Isto apaga todo o vocabulário aprendido. Repita com --yes para confirmar.");
+                        return 1;
+                    }
+
+                    await store.ClearVocabularyAsync();
+                    Console.WriteLine("vocabulário apagado.");
+                    return 0;
+            }
+
+            IReadOnlyList<VocabularyTerm> terms = await store.ListVocabularyAsync();
+            if (terms.Count == 0)
+            {
+                Console.WriteLine("Nenhum vocabulário aprendido ainda.");
+                return 0;
+            }
+
+            Console.WriteLine($"{"termo",-24} {"tipo",-12} {"vezes",5} {"sessões",7}  estado      visto por último");
+            foreach (VocabularyTerm t in terms)
+            {
+                Console.WriteLine($"{t.Term,-24} {KindLabel(t.Kind),-12} {t.Occurrences,5} {t.Sessions,7}  {StateLabel(t.State),-10}  {t.LastSeenUtc.ToLocalTime():yyyy-MM-dd HH:mm}");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine($"Ativo = usado como dica no reconhecimento (e, se nome/sigla, mantido em inglês). Ativa depois de {Infrastructure.MeetingStore.ActivationOccurrences} frases.");
+            return 0;
+        }
+
+        private static string KindLabel(string kind) => kind switch { "name" => "nome", "acronym" => "sigla", _ => "palavra rara" };
+
+        private static string StateLabel(VocabularyState state) => state switch
+        {
+            VocabularyState.Active => "ativo",
+            VocabularyState.Candidate => "observando",
+            _ => "esquecido",
+        };
 
         internal static string RepoRoot()
         {

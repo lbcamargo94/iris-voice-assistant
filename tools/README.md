@@ -38,8 +38,13 @@ $live = "tools\IrisVoiceAssistant.LiveDemo\bin\Release\net10.0-windows\iris-live
 & $live                 # q para parar, p para pausar
 & $live --mic           # também o microfone
 & $live delete --yes    # apaga o texto salvo (data\iris-live.db)
+& $live vocab           # vocabulário aprendido (ADR-015)
+& $live vocab forget Francina   # esquece um termo; vocab clear --yes apaga tudo
+& $live --no-learning   # sessão sem aprender vocabulário
 ```
 
 - **Na abertura**, mostra um aviso de consentimento.
 - **Nenhum áudio é gravado.** O texto fica em `data\iris-live.db`, fora do git.
 - **Primeira partida mais lenta:** carregar os modelos leva até ~1 minuto lendo do HD. Isso inclui a conferência do SHA-256, que só é refeita quando o arquivo muda.
+
+- **Aprendizado de vocabulário (ADR-015):** a cada frase, nomes, siglas e palavras raras são registrados. Depois de 3 frases, o termo passa a ser usado como dica para o reconhecimento e, se for nome ou sigla, fica em inglês na tradução. A demo avisa com "aprendi: …", e o que foi aprendido vale também nas próximas sessões.

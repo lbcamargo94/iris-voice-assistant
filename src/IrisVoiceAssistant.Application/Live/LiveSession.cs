@@ -31,6 +31,9 @@ public sealed record LiveSessionOptions
     public TimeSpan StopTimeout { get; init; } = TimeSpan.FromSeconds(90);
 
     public string TranslationModel { get; init; } = "opus-mt-tc-big-en-pt";
+
+    /// <summary>Learn names, acronyms and rare words across sessions and use them as hints (ADR-015).</summary>
+    public bool LearnVocabulary { get; init; } = true;
 }
 
 /// <summary>A capture stream to open; the factory comes from a platform adapter (ADR-004).</summary>
@@ -89,6 +92,9 @@ public sealed class LiveSession : IAsyncDisposable
     private int _duplicates;
     private string? _speechFailure;
     private string? _translationFailure;
+    private IReadOnlyList<VocabularyTerm> _activeTerms = [];
+    private int _vocabularyPushes;
+    private readonly SemaphoreSlim _pushLock = new(1, 1);
 
     public LiveSession(LiveSessionOptions options)
     {
@@ -111,6 +117,15 @@ public sealed class LiveSession : IAsyncDisposable
     public event Action<string, WorkerState, string?>? WorkerStateChanged;
 
     public event Action<AudioStreamKind, AudioCaptureState, string?>? CaptureStateChanged;
+
+    /// <summary>Terms that just became active (ADR-015): from now on they hint recognition and translation.</summary>
+    public event Action<IReadOnlyList<VocabularyTerm>>? TermsLearned;
+
+    /// <summary>Active learned terms currently sent to the workers.</summary>
+    public IReadOnlyList<VocabularyTerm> ActiveVocabulary => Volatile.Read(ref _activeTerms);
+
+    /// <summary>How many times the active vocabulary was delivered to both workers.</summary>
+    public int VocabularyPushes => Volatile.Read(ref _vocabularyPushes);
 
     public Guid MeetingId { get; private set; }
 
@@ -149,6 +164,15 @@ public sealed class LiveSession : IAsyncDisposable
         _store = await MeetingStore.OpenAsync(_options.DatabasePath, cancellationToken).ConfigureAwait(false);
         DateTimeOffset now = DateTimeOffset.UtcNow;
         MeetingId = await _store.CreateMeetingAsync(_options.Title, now, cancellationToken).ConfigureAwait(false);
+        if (_options.LearnVocabulary)
+        {
+            _activeTerms = await _store.GetActiveTermsAsync(now, cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (_activeTerms.Count > 0)
+            {
+                Status?.Invoke($"Vocabulário aprendido em sessões anteriores: {_activeTerms.Count} termos ({string.Join(", ", _activeTerms.Take(8).Select(t => t.Term))}{(_activeTerms.Count > 8 ? ", ..." : "")}).");
+                await PushVocabularyAsync().ConfigureAwait(false);
+            }
+        }
         _sessionStart = Stopwatch.GetTimestamp();
 
         foreach (CaptureSourceSpec source in sources)
@@ -253,6 +277,7 @@ public sealed class LiveSession : IAsyncDisposable
         }
 
         _sendLock.Dispose();
+        _pushLock.Dispose();
         _stopping.Dispose();
     }
 
@@ -364,6 +389,10 @@ public sealed class LiveSession : IAsyncDisposable
             }
 
             _speechReady.TrySetResult();
+            if (_speech!.Restarts > 0 && ActiveVocabulary.Count > 0)
+            {
+                _ = PushVocabularyAsync(); // a new process starts without the learned hotwords
+            }
         }
         catch (WorkerUnavailableException)
         {
@@ -389,6 +418,10 @@ public sealed class LiveSession : IAsyncDisposable
         }
 
         _translationReady.TrySetResult();
+        if (state == "ready" && _translation!.Restarts > 0 && ActiveVocabulary.Count > 0)
+        {
+            _ = PushVocabularyAsync();
+        }
     }
 
     private void OnWorkerState(string worker, WorkerState state, string? reason, ref TaskCompletionSource ready)
@@ -463,6 +496,44 @@ public sealed class LiveSession : IAsyncDisposable
         if (stream == AudioStreamKind.SystemAudio || _options.TranslateMicrophone)
         {
             _translations.Writer.TryWrite(segment);
+        }
+
+        if (_options.LearnVocabulary && body["terms"] is JsonArray terms && terms.Count > 0)
+        {
+            TermObservation[] observed = [.. terms.OfType<JsonObject>()
+                .Select(t => new TermObservation((string?)t["text"] ?? string.Empty, (string?)t["kind"] ?? "rare"))
+                .Where(t => t.Text.Length > 0)];
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            IReadOnlyList<VocabularyTerm> activated = await _store.ObserveTermsAsync(SessionId, observed, now).ConfigureAwait(false);
+            if (activated.Count > 0)
+            {
+                Volatile.Write(ref _activeTerms, await _store.GetActiveTermsAsync(now).ConfigureAwait(false));
+                TermsLearned?.Invoke(activated);
+                _ = PushVocabularyAsync();
+            }
+        }
+    }
+
+    /// <summary>Sends the active vocabulary to both workers: all terms as STT hints, names/acronyms kept in English.</summary>
+    private async Task PushVocabularyAsync()
+    {
+        await _pushLock.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            IReadOnlyList<VocabularyTerm> terms = ActiveVocabulary;
+            var hints = new JsonArray([.. terms.Select(t => JsonValue.Create(t.Term))]);
+            var keep = new JsonArray([.. terms.Where(t => t.KeepInEnglish).Select(t => JsonValue.Create(t.Term))]);
+            await _speech!.RequestAsync("set_hotwords", new JsonObject { ["terms"] = hints }).ConfigureAwait(false);
+            await _translation!.RequestAsync("set_protected_terms", new JsonObject { ["terms"] = keep }).ConfigureAwait(false);
+            Interlocked.Increment(ref _vocabularyPushes);
+        }
+        catch (Exception error) when (error is WorkerUnavailableException or WorkerRequestException)
+        {
+            Status?.Invoke($"Vocabulário não enviado agora ({error.Message}); será reenviado quando o worker voltar.");
+        }
+        finally
+        {
+            _pushLock.Release();
         }
     }
 

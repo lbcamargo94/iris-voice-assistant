@@ -52,3 +52,4 @@ P0: pesquisa textual simples em SQLite. Pesquisa semântica local e embeddings f
 - **Ordem:** cada frase final é gravada antes de ser publicada (`LiveSession`), e a tradução é gravada antes de aparecer.
 - **Exclusão:** apagar uma reunião remove em cascata sessões, segmentos, traduções e lacunas (RF-DATA-004).
 - **Sem áudio:** o banco só guarda texto e tempos.
+- **Esquema v2 (ADR-015):** a tabela `vocabulary` guarda os termos aprendidos (termo, tipo, ocorrências, sessões, primeira e última vez visto, estado `Candidate`, `Active` ou `Forgotten`, origem `auto`). Ela não pertence a uma reunião: sobrevive à exclusão de reuniões e é apagada por `iris-live vocab clear` ou junto com o banco. Bancos v1 são migrados ao abrir.

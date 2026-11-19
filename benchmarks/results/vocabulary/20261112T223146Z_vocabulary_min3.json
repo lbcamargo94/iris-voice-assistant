@@ -1,0 +1,58 @@
+{
+  "benchmark": "vocabulary",
+  "created_utc": "2026-11-12T22:31:05+00:00",
+  "environment": {
+    "python_version": "3.12.16",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "machine": "AMD64",
+    "processor": "AMD64 Family 25 Model 33 Stepping 2, AuthenticAMD",
+    "gpus": [
+      {
+        "name": "NVIDIA GeForce RTX 4060 Ti",
+        "memory_total_mib": 8188,
+        "driver_version": "616.92"
+      }
+    ]
+  },
+  "model": {
+    "name": "large-v3-turbo",
+    "repo": "mobiuslabsgmbh/faster-whisper-large-v3-turbo",
+    "revision": "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf",
+    "model_bin_sha256": "e76620f83d5f5b69efd3d87e3dc180c1bd21df9fbebacfd4335e5e1efcc018da",
+    "pinned": true
+  },
+  "config": {
+    "meetings": "['IS1009a', 'ES2004a']",
+    "learn_seconds": "300",
+    "evaluate_seconds": "300",
+    "min_sentences": "3",
+    "model": "large-v3-turbo",
+    "compute_type": "int8_float16"
+  },
+  "meetings": [
+    {
+      "meeting": "IS1009a",
+      "learned_terms": [
+        "whiteboard"
+      ],
+      "candidates_seen": 10,
+      "reference_words": 807,
+      "wer_without": 0.2615,
+      "wer_with": 0.2862,
+      "learned_terms_in_reference": 0,
+      "learned_terms_in_hypothesis_without": 0,
+      "learned_terms_in_hypothesis_with": 0
+    },
+    {
+      "meeting": "ES2004a",
+      "learned_terms": [],
+      "candidates_seen": 7,
+      "reference_words": 680,
+      "wer_without": 0.2706,
+      "wer_with": 0.2706,
+      "learned_terms_in_reference": 0,
+      "learned_terms_in_hypothesis_without": 0,
+      "learned_terms_in_hypothesis_with": 0
+    }
+  ]
+}

@@ -13,7 +13,13 @@ namespace IrisVoiceAssistant.Infrastructure;
 /// </summary>
 public sealed class MeetingStore : IAsyncDisposable
 {
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 2;
+
+    /// <summary>A term becomes active once it appeared in this many distinct final sentences (ADR-015).</summary>
+    public const int ActivationOccurrences = 3;
+
+    /// <summary>Active terms not seen for this long stop being used (but are kept in the history).</summary>
+    public static readonly TimeSpan ActiveFor = TimeSpan.FromDays(30);
     private readonly SqliteConnection _connection;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
@@ -204,6 +210,128 @@ public sealed class MeetingStore : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Records the terms of one final sentence (each counts once) and returns those that just became active.
+    /// Forgotten terms are ignored.
+    /// </summary>
+    public async Task<IReadOnlyList<VocabularyTerm>> ObserveTermsAsync(
+        Guid sessionId, IReadOnlyList<TermObservation> terms, DateTimeOffset seenUtc, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(terms);
+        var activated = new List<VocabularyTerm>();
+        if (terms.Count == 0)
+        {
+            return activated;
+        }
+
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await using var transaction = (SqliteTransaction)await _connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+            foreach (TermObservation observation in terms.DistinctBy(t => t.Text.ToLowerInvariant()))
+            {
+                string key = observation.Text.ToLowerInvariant();
+                await using SqliteCommand find = Command(
+                    "SELECT state, occurrences, sessions, last_session_id, first_seen_utc FROM vocabulary WHERE key = $key;", ("$key", key));
+                find.Transaction = transaction;
+                await using SqliteDataReader row = await find.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                if (!await row.ReadAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    await row.DisposeAsync().ConfigureAwait(false);
+                    await RunAsync(transaction,
+                        """
+                        INSERT INTO vocabulary (key, term, kind, occurrences, sessions, last_session_id, first_seen_utc, last_seen_utc, state, source)
+                        VALUES ($key, $term, $kind, 1, 1, $session, $seen, $seen, 'Candidate', 'auto');
+                        """, cancellationToken,
+                        ("$key", key), ("$term", observation.Text), ("$kind", observation.Kind), ("$session", sessionId.ToString()), ("$seen", Utc(seenUtc))).ConfigureAwait(false);
+                    continue;
+                }
+
+                var state = Enum.Parse<VocabularyState>(row.GetString(0));
+                int occurrences = row.GetInt32(1) + 1;
+                int sessions = row.GetInt32(2) + (row.IsDBNull(3) || row.GetString(3) != sessionId.ToString() ? 1 : 0);
+                DateTimeOffset firstSeen = DateTimeOffset.Parse(row.GetString(4), CultureInfo.InvariantCulture);
+                await row.DisposeAsync().ConfigureAwait(false);
+                if (state == VocabularyState.Forgotten)
+                {
+                    continue;
+                }
+
+                VocabularyState next = state == VocabularyState.Candidate && occurrences >= ActivationOccurrences ? VocabularyState.Active : state;
+                await RunAsync(transaction,
+                    """
+                    UPDATE vocabulary SET term = $term, occurrences = $occ, sessions = $sessions, last_session_id = $session,
+                        last_seen_utc = $seen, state = $state WHERE key = $key;
+                    """, cancellationToken,
+                    ("$key", key), ("$term", observation.Text), ("$occ", occurrences), ("$sessions", sessions),
+                    ("$session", sessionId.ToString()), ("$seen", Utc(seenUtc)), ("$state", next.ToString())).ConfigureAwait(false);
+                if (next != state)
+                {
+                    activated.Add(new VocabularyTerm(observation.Text, observation.Kind, occurrences, sessions, firstSeen, seenUtc, next));
+                }
+            }
+
+            await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+            return activated;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <summary>Active terms seen within <see cref="ActiveFor"/> of <paramref name="nowUtc"/>, most frequent and recent first.</summary>
+    public async Task<IReadOnlyList<VocabularyTerm>> GetActiveTermsAsync(DateTimeOffset nowUtc, int limit = 40, CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<VocabularyTerm> all = await ListVocabularyAsync(cancellationToken).ConfigureAwait(false);
+        return [.. all.Where(t => t.State == VocabularyState.Active && nowUtc - t.LastSeenUtc <= ActiveFor)
+                      .OrderByDescending(t => t.Occurrences).ThenByDescending(t => t.LastSeenUtc).Take(limit)];
+    }
+
+    public async Task<IReadOnlyList<VocabularyTerm>> ListVocabularyAsync(CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await using SqliteCommand command = Command(
+                "SELECT term, kind, occurrences, sessions, first_seen_utc, last_seen_utc, state FROM vocabulary ORDER BY occurrences DESC, term;");
+            await using SqliteDataReader reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+            var terms = new List<VocabularyTerm>();
+            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                terms.Add(new VocabularyTerm(reader.GetString(0), reader.GetString(1), reader.GetInt32(2), reader.GetInt32(3),
+                    DateTimeOffset.Parse(reader.GetString(4), CultureInfo.InvariantCulture),
+                    DateTimeOffset.Parse(reader.GetString(5), CultureInfo.InvariantCulture), Enum.Parse<VocabularyState>(reader.GetString(6))));
+            }
+
+            return terms;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <summary>Stops using a term and keeps it from being learned again. Returns false if unknown.</summary>
+    public async Task<bool> ForgetTermAsync(string term, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(term);
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await using SqliteCommand command = Command("UPDATE vocabulary SET state = 'Forgotten' WHERE key = $key;", ("$key", term.ToLowerInvariant()));
+            return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false) > 0;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <summary>Deletes everything learned, including forgotten terms.</summary>
+    public Task ClearVocabularyAsync(CancellationToken cancellationToken = default) =>
+        ExecuteAsync("DELETE FROM vocabulary;", cancellationToken);
+
     /// <summary>Deletes a meeting and everything derived from it (RF-DATA-004): sessions, segments, translations, gaps.</summary>
     public Task DeleteMeetingAsync(Guid meetingId, CancellationToken cancellationToken = default) =>
         ExecuteAsync("DELETE FROM meetings WHERE id = $id;", cancellationToken, ("$id", meetingId.ToString()));
@@ -230,11 +358,32 @@ public sealed class MeetingStore : IAsyncDisposable
             throw new InvalidOperationException($"Database schema {current} is newer than this app ({SchemaVersion}).");
         }
 
-        if (current == SchemaVersion)
+        if (current < 1)
         {
-            return;
+            await CreateSchemaV1Async(cancellationToken).ConfigureAwait(false);
         }
 
+        if (current < 2)
+        {
+            // v2 (ADR-015): vocabulary learned across sessions. Not tied to a meeting: it survives meeting
+            // deletion by design and is removed with ClearVocabularyAsync or by deleting the database.
+            await ExecuteAsync(
+                """
+                BEGIN;
+                CREATE TABLE vocabulary (
+                    key TEXT PRIMARY KEY, term TEXT NOT NULL, kind TEXT NOT NULL,
+                    occurrences INTEGER NOT NULL, sessions INTEGER NOT NULL, last_session_id TEXT,
+                    first_seen_utc TEXT NOT NULL, last_seen_utc TEXT NOT NULL,
+                    state TEXT NOT NULL, source TEXT NOT NULL);
+                PRAGMA user_version = 2;
+                COMMIT;
+                """,
+                cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private async Task CreateSchemaV1Async(CancellationToken cancellationToken)
+    {
         await ExecuteAsync(
             """
             BEGIN;
@@ -282,6 +431,13 @@ public sealed class MeetingStore : IAsyncDisposable
         {
             _gate.Release();
         }
+    }
+
+    private async Task RunAsync(SqliteTransaction transaction, string sql, CancellationToken cancellationToken, params (string Name, object? Value)[] parameters)
+    {
+        await using SqliteCommand command = Command(sql, parameters);
+        command.Transaction = transaction;
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private SqliteCommand Command(string sql, params (string Name, object? Value)[] parameters)

@@ -100,7 +100,10 @@ class _Stream:
 
 class SpeechEngine:
     def __init__(self, transcribe: Transcriber, partial_transcribe: Transcriber, emit: Callable[[dict[str, Any]], None],
-                 config: SpeechConfig | None = None) -> None:
+                 config: SpeechConfig | None = None,
+                 extract_terms: Callable[[str], list[dict[str, str]]] | None = None) -> None:
+        """``extract_terms`` (ADR-015) lists vocabulary candidates of a final sentence; they travel in ``stt.final``."""
+        self._extract_terms = extract_terms
         self._transcribe = transcribe
         self._partial = partial_transcribe
         self._emit = emit
@@ -262,8 +265,9 @@ class SpeechEngine:
         end_pos = state.base + int(round(end * SAMPLE_RATE))
         state.last_final_end = max(state.last_final_end, end_pos)
         self.finals += 1
+        terms = self._extract_terms(text) if self._extract_terms else []
         self._emit({"type": "stt.final", "stream": state.kind, "text": text, "start": start_pos, "end": end_pos,
-                    "words": words, "forced": forced})
+                    "words": words, "forced": forced, "terms": terms})
 
     def _partial_update(self, state: _Stream, text: str) -> None:
         if text != state.last_partial:

@@ -88,6 +88,10 @@ class MarianTranslator:
         self._beam_size = beam_size
         self._max_decoding_length = max_decoding_length
 
+    def set_protector(self, protector: TermProtector | None) -> None:
+        """Replaces the glossary, e.g. with learned names and acronyms added (ADR-015)."""
+        self._protector = protector
+
     def _translate_batch(self, sentences: Sequence[str]) -> list[str]:
         batch = [
             build_source_tokens(self._source.encode(sentence, out_type=str), self._target_token)
